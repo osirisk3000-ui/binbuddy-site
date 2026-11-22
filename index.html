@@ -1,143 +1,178 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2d29c4"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="Snap your trash, find the right bin, earn points.">
+<meta name="theme-color" content="#1f8a70"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Snap your trash, find the right bin, earn points.">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
-<title>BinBuddy – Campus Recycling Game</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>BinBuddy</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f1eeff;--card:#fff;--ink:#1b1830;--mute:#6b6785;--pur:#8b3cf6;--lime:#b5f01f;--org:#ff9a1f;--grn:#2fc16b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14121f;--card:#1f1c30;--ink:#f4f2ff;--mute:#a29fc0}}
-:root[data-theme="dark"]{--bg:#14121f;--card:#1f1c30;--ink:#f4f2ff;--mute:#a29fc0}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,sans-serif;display:flex;justify-content:center}
-main{width:100%;max-width:440px;min-height:100vh;padding:16px 16px 110px}
-h1,h2,h3,p{margin:0}
-.hero{background:var(--pur);color:#fff;border-radius:28px;padding:16px}
-.who{background:#fff;color:#1b1830;border-radius:20px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.who b{display:block;font-size:15px}.who small{color:#6b6785}
-.lvl{background:#1b1830;color:var(--lime);border-radius:12px;padding:4px 10px;font-weight:800;font-size:13px;white-space:nowrap}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-.stat{background:#1b1830;border-radius:18px;padding:12px 6px;text-align:center}
-.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:#cfc8ff}
-.bar{height:10px;background:#ffffff33;border-radius:9px;margin-top:14px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--lime);border-radius:9px;transition:width .6s}
-.cap{font-size:12px;margin-top:6px;color:#e6e0ff}
-h2{font-size:18px;margin:22px 0 10px}
-.card{background:var(--card);border-radius:22px;padding:16px;margin-bottom:12px}
-.mats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.mat{border-radius:20px;padding:14px;color:#1b1830;font-size:13px}
-.mat b{display:block;font-size:16px;margin-bottom:4px}
-button{font:inherit;cursor:pointer;border:0}
-.big{width:100%;background:var(--lime);color:#1b1830;font-weight:800;padding:16px;border-radius:22px;font-size:16px}
-.big:disabled{opacity:.5}
-.ghost{background:transparent;color:var(--pur);font-weight:600;padding:8px 12px;border:2px solid var(--pur);border-radius:14px}
-input{font:inherit;width:100%;padding:14px;border-radius:16px;border:2px solid var(--mute);background:var(--bg);color:var(--ink);margin:10px 0}
-button:focus-visible,input:focus-visible{outline:3px solid var(--org);outline-offset:2px}
-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--pur);padding:8px;border-radius:40px;display:flex;gap:8px;box-shadow:0 8px 24px #0005}
-nav button{background:transparent;color:#fff;padding:12px 18px;border-radius:30px;font-weight:600;font-size:14px}
-nav button[aria-current=true]{background:#1b1830;color:var(--lime)}
-.view{display:none}.view.on{display:block}
-.preview{width:100%;border-radius:22px;max-height:300px;object-fit:cover;display:none;margin-bottom:12px}
-.result{background:var(--pur);color:#fff;border-radius:24px;padding:16px;margin-top:12px}
-.row{display:flex;justify-content:space-between;text-align:center;background:#1b1830;border-radius:18px;padding:12px;margin:12px 0}
-.row span{font-size:12px;color:#cfc8ff;display:block}.row b{font-size:16px}
-.bin{display:inline-block;padding:4px 12px;border-radius:12px;font-weight:800;color:#1b1830}
-.badges{display:flex;gap:10px;flex-wrap:wrap}
-.badge{flex:1 1 90px;text-align:center;background:var(--card);border-radius:18px;padding:12px 6px;font-size:12px;opacity:.4}
-.badge.got{opacity:1;outline:3px solid var(--org)}.badge div{font-size:28px}
-.bins li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #8884;list-style:none}
-ul{padding:0;margin:0}
+:root{--bg:#f3f7f2;--card:#fff;--ink:#12332b;--mute:#5d7a71;--pri:#1f8a70;--pri2:#2bb48f;--sun:#ffb703;--line:#12332b1a;--blue:#3b82f6;--green:#22a35a;--gray:#4b5563;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1c19;--card:#172b26;--ink:#eaf6f1;--mute:#93b3a9;--pri:#2bb48f;--pri2:#3ddc97;--line:#ffffff1f}}
+:root[data-theme="dark"]{--bg:#0e1c19;--card:#172b26;--ink:#eaf6f1;--mute:#93b3a9;--pri:#2bb48f;--pri2:#3ddc97;--line:#ffffff1f}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,sans-serif;display:flex;justify-content:center;padding-top:env(safe-area-inset-top,0px)}
+main{width:100%;max-width:440px;min-height:100vh;padding:14px 16px 120px}
+h1,h2,h3,p{margin:0}h2{font-size:18px;margin:20px 0 10px}
+button,input{font:inherit}button{cursor:pointer;border:0;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.card{background:var(--card);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
+.btn{width:100%;background:var(--pri);color:#fff;font-weight:800;padding:15px;border-radius:20px;font-size:16px;transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.97)}
+.btn.sun{background:var(--sun);color:#12332b}.btn.out{background:transparent;color:var(--pri);border:2px solid var(--pri)}
+input[type=text]{width:100%;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--bg);color:var(--ink);margin:8px 0}
 .msg{font-size:13px;color:var(--mute);margin-top:6px}
-video{width:100%;border-radius:18px;display:none}
-.mapbox{background:#e5e4ee;border-radius:22px;height:240px;position:relative;overflow:hidden;margin-bottom:12px}
-.pin{position:absolute;background:#1b1830;color:#fff;font-size:11px;padding:4px 8px;border-radius:10px;transform:translate(-50%,-50%);white-space:nowrap}
-.pin:after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1b1830;border-bottom:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.screen{display:none}.screen.on{display:block}
+.hero{text-align:center;padding:44px 12px 20px}.hero img{border-radius:28px;box-shadow:0 10px 30px #1f8a7066}
+.hero h1{font-size:34px;font-weight:800;margin-top:14px}.hero p{color:var(--mute);margin:6px 0 24px}
+.stack{display:grid;gap:10px}
+/* header */
+.top{display:flex;align-items:center;gap:10px}
+.av{width:46px;height:46px;border-radius:50%;background:var(--pri) center/cover;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;flex:none}
+.top b{display:block;font-size:15px;line-height:1.2}.top small{color:var(--mute)}
+.pts{margin-left:auto;background:var(--card);border-radius:20px;padding:8px 14px;font-weight:800;display:flex;gap:6px;align-items:center;box-shadow:0 2px 10px #0000000d}
+.coin{width:20px;height:20px;border-radius:50%;background:var(--sun);display:inline-grid;place-items:center;font-size:12px;color:#12332b}
+.lv{margin-top:12px;font-size:12px;color:var(--mute);display:flex;justify-content:space-between}
+.bar{height:10px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),var(--sun));border-radius:9px;transition:width .7s cubic-bezier(.3,1.2,.5,1)}
+/* views */
+.view{display:none}.view.on{display:block;animation:vin .38s cubic-bezier(.2,.9,.25,1)}
+@keyframes vin{from{opacity:0;transform:translateX(calc(var(--dir,1)*46px)) scale(.98)}}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--card);padding:6px;border-radius:34px;display:flex;box-shadow:0 8px 28px #0003;z-index:20}
+nav button{position:relative;z-index:1;background:transparent;width:64px;height:48px;border-radius:26px;display:grid;place-items:center;color:var(--mute);transition:color .25s}
+nav button[aria-current=true]{color:#fff}
+.pill{position:absolute;top:6px;left:0;height:48px;width:64px;border-radius:26px;background:var(--pri);transition:transform .42s cubic-bezier(.3,1.3,.5,1),width .2s ease-out}
+svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* materials */
+.mats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.mat{border-radius:22px;padding:14px;text-align:left;background:var(--card);box-shadow:0 2px 10px #0000000d;transition:transform .2s}
+.mat:hover{transform:translateY(-3px)}.mat .em{font-size:38px;width:62px;height:62px;border-radius:18px;display:grid;place-items:center;margin-bottom:8px}.mat b{font-size:15px}.mat small{display:block;color:var(--mute);font-size:12px}
+/* scan */
+.pv{position:relative;border-radius:24px;overflow:hidden;display:none;margin-bottom:12px}.pv img{width:100%;max-height:320px;object-fit:cover;display:block}
+.spin{position:absolute;inset:0;background:#0009;display:none;place-items:center;color:#fff;font-weight:600}
+.spin.on{display:grid}.ring{width:74px;height:74px;border-radius:50%;background:conic-gradient(var(--sun),#fff0 70%);-webkit-mask:radial-gradient(circle 28px,#0000 98%,#000);mask:radial-gradient(circle 28px,#0000 98%,#000);animation:rot .9s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.res{display:none;background:var(--card);border-radius:24px;padding:16px;margin-top:12px;animation:vin .4s}
+.res .rt{display:flex;gap:14px;align-items:center}.res svg.bin{width:64px;height:64px;flex:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.3) rotate(-12deg)}}
+.chips{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.chip{background:var(--bg);border-radius:14px;padding:8px 12px;font-size:12px}.chip b{display:block;font-size:15px}
+.fact{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:18px;padding:12px 14px;font-size:13px;margin-bottom:12px}
+.mapbox{background:var(--line);border-radius:22px;height:240px;position:relative;overflow:hidden;margin-bottom:12px}
+.pin{position:absolute;background:var(--ink);color:var(--bg);font-size:11px;padding:4px 8px;border-radius:10px;transform:translate(-50%,-50%);white-space:nowrap}
+ul{padding:0;margin:0}.bins li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);list-style:none}
+.badges{display:flex;gap:10px;flex-wrap:wrap}.badge{flex:1 1 90px;text-align:center;background:var(--card);border-radius:18px;padding:12px 6px;font-size:12px;opacity:.4}.badge.got{opacity:1;outline:3px solid var(--sun)}.badge div{font-size:28px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}.grid3 b{display:block;font-size:20px}.grid3 span{font-size:12px;color:var(--mute)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.sw{width:48px;height:28px;border-radius:20px;background:var(--line);position:relative;transition:background .2s}.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .25s cubic-bezier(.3,1.5,.5,1)}.sw.on{background:var(--pri)}.sw.on:after{transform:translateX(20px)}
+/* modals */
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:50}.modal.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:440px;border-radius:28px 28px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto;animation:up .35s cubic-bezier(.2,.9,.25,1)}
+@keyframes up{from{transform:translateY(60%);opacity:0}}
+video{width:100%;border-radius:18px;background:#000;display:none;max-height:50vh;object-fit:cover}
+#boot{position:fixed;inset:0;background:var(--bg);display:none;place-items:center;z-index:99;padding:24px;text-align:center}#boot.on{display:grid}
+#boot .bar{height:14px;margin:18px 0 8px}
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-120px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:20px;z-index:100;transition:transform .45s cubic-bezier(.3,1.4,.5,1);font-weight:600}.toast.on{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 <main>
-<!-- LOGIN -->
-<section id="login" class="view on">
-  <div class="hero" style="margin-top:30px;text-align:center;padding:30px 20px">
-    <img src="icons/icon-192.png" alt="BinBuddy logo" width="96" height="96" style="border-radius:24px">
-    <h1 style="font-size:32px;font-weight:800">BinBuddy</h1>
-    <p style="margin-top:6px;color:#e6e0ff">Snap your trash. Find the right bin. Rack up points.</p>
-  </div>
-  <div class="card" style="margin-top:14px">
-    <h3>Link your student ID</h3>
-    <video id="cam" playsinline muted></video>
-    <button class="big" id="scanBtn" style="margin-top:10px">Scan ID barcode</button>
-    <label class="msg" for="sid" style="display:block;margin-top:12px">Or upload a photo of the barcode, or type the number</label>
-    <input id="sid" inputmode="numeric" placeholder="Student ID number">
-    <div style="display:flex;gap:8px">
-      <button class="ghost" id="upBtn">Upload barcode photo</button>
-      <button class="ghost" id="goBtn" style="background:var(--pur);color:#fff">Create account</button>
-    </div>
-    <input type="file" id="bcFile" accept="image/*" hidden>
-    <p class="msg" id="loginMsg" role="status"></p>
-  </div>
-</section>
+<!-- WELCOME / SIGNUP / LOGIN -->
+<section class="screen on" id="welcome"><div class="hero"><img src="icons/icon-192.png" alt="BinBuddy logo" width="110" height="110"><h1>BinBuddy</h1><p>Snap your trash. Find the right bin. Earn points.</p>
+<div class="stack"><button class="btn" id="toSign">Sign up</button><button class="btn out" id="toLog">Log in</button></div></div></section>
+<section class="screen" id="signup"><h2>Create your account</h2><div class="card">
+<label class="msg" for="suName">Choose a username</label><input type="text" id="suName" maxlength="20" autocomplete="username">
+<button class="btn out" id="suId">Link student ID (optional)</button><p class="msg" id="suIdMsg">Linking lets you log in fast by scanning your barcode.</p>
+<button class="btn sun" id="suGo" style="margin-top:14px">Create account</button><p class="msg" id="suMsg" role="status"></p></div><button class="btn out" data-back>Back</button></section>
+<section class="screen" id="login"><h2>Welcome back</h2><div class="card">
+<button class="btn" id="lgScan">Log in with ID barcode</button>
+<label class="msg" for="lgName" style="display:block;margin-top:14px">Or enter your username</label><input type="text" id="lgName" autocomplete="username">
+<button class="btn out" id="lgGo">Log in</button><p class="msg" id="lgMsg" role="status"></p></div><button class="btn out" data-back>Back</button></section>
 
 <!-- APP -->
-<section id="app" style="display:none">
-  <div class="hero">
-    <div class="who"><div><b id="uid"></b><small>Campus Recycler</small></div><span class="lvl" id="lvl"></span></div>
-    <div class="stats">
-      <div class="stat"><b id="sItems">0</b><span>Items</span></div>
-      <div class="stat"><b id="sStreak">0</b><span>Day streak</span></div>
-      <div class="stat"><b id="sPts">0</b><span>Points</span></div>
-    </div>
-    <div class="bar"><i id="xp" style="width:0"></i></div>
-    <p class="cap" id="xpCap"></p>
-  </div>
+<section class="screen" id="app">
+ <div class="top"><div class="av" id="hAv"></div><div><b id="hName"></b><small id="hLv"></small></div><div class="pts" aria-label="Points"><span class="coin">★</span><span id="hPts">0</span></div></div>
+ <div class="lv"><span id="lvA"></span><span id="lvB"></span></div><div class="bar"><i id="xp"></i></div>
 
-  <div class="view on" id="v-home">
-    <h2>Where does it go?</h2>
-    <div class="mats" id="mats"></div>
-    <h2>Badges</h2>
-    <div class="badges" id="badges"></div>
-    <button class="ghost" id="logout" style="margin-top:18px">Log out</button>
-  </div>
+ <div class="view on" id="v-home"><h2>Where does it go?</h2><div class="mats" id="mats"></div><h2>Badges</h2><div class="badges" id="badges"></div></div>
 
-  <div class="view" id="v-scan">
-    <h2>Scan your trash</h2>
-    <img class="preview" id="prev" alt="Your photo">
-    <button class="big" id="snap">Take or upload photo</button>
-    <input type="file" id="photo" accept="image/*" capture="environment" hidden>
-    <p class="msg" id="scanMsg" role="status"></p>
-    <div class="result" id="res" style="display:none">
-      <h3 id="rName"></h3><p id="rTip" style="font-size:13px;margin-top:4px"></p>
-      <div class="row"><div><span>Points</span><b id="rPts"></b></div><div><span>Material</span><b id="rMat"></b></div><div><span>Bin</span><b id="rBin"></b></div></div>
-      <button class="big" id="addBin">Add to bin</button>
-    </div>
-  </div>
+ <div class="view" id="v-scan"><h2>Scan your trash</h2>
+  <div class="pv" id="pv"><img id="prev" alt="Your photo"><div class="spin" id="spin"><div style="text-align:center"><div class="ring" style="margin:auto"></div><p style="margin-top:10px">Analyzing…</p></div></div></div>
+  <button class="btn" id="snap">Open camera</button><p class="msg" id="scanMsg" role="status"></p>
+  <div class="res" id="res"><div class="rt"><div id="rBinIcon"></div><div><h3 id="rName"></h3><p class="msg" id="rTip"></p></div></div>
+   <div class="chips"><div class="chip"><span>Points</span><b id="rPts"></b></div><div class="chip"><span>Material</span><b id="rMat"></b></div><div class="chip"><span>Goes in</span><b id="rBin"></b></div></div>
+   <div class="fact" id="rFact"></div><button class="btn sun" id="addBin">Add to bin</button></div>
+  <input type="file" id="photo" accept="image/*" capture="environment" hidden></div>
 
-  <div class="view" id="v-map">
-    <h2>Bins near you</h2>
-    <div class="mapbox" id="map"></div>
-    <div class="card"><ul class="bins" id="binList"></ul></div>
-    <p class="msg">Sample locations. Replace the BINS list in the code with your real campus bins.</p>
-  </div>
+ <div class="view" id="v-map"><h2>Bins near you</h2><div class="mapbox" id="map"></div><div class="card"><ul class="bins" id="binList"></ul></div><p class="msg">Sample locations. Edit the BINS list for your campus.</p></div>
 
-  <nav aria-label="Main">
-    <button data-v="home" aria-current="true">Home</button>
-    <button data-v="scan">Scan</button>
-    <button data-v="map">Bins</button>
-  </nav>
+ <div class="view" id="v-me"><h2>Your profile</h2><div class="card" style="text-align:center"><div class="av" id="pAv" style="width:92px;height:92px;margin:auto;font-size:36px"></div>
+  <button class="btn out" id="avBtn" style="margin-top:12px;width:auto;padding:8px 18px;font-size:14px">Change photo</button><input type="file" id="avFile" accept="image/*" hidden>
+  <input type="text" id="pName" maxlength="20" aria-label="Username"><button class="btn" id="saveName">Save username</button></div>
+  <div class="card grid3"><div><b id="mItems">0</b><span>Items</span></div><div><b id="mStreak">0</b><span>Day streak</span></div><div><b id="mPts">0</b><span>Points</span></div></div>
+  <div class="card"><div class="row"><span>Student ID</span><b id="mId">Not linked</b></div><button class="btn out" id="relink" style="margin-top:10px">Link / change ID</button>
+   <div class="row" style="margin-top:6px"><span>Dark mode</span><button class="sw" id="swTheme" role="switch" aria-label="Dark mode"></button></div>
+   <div class="row"><span>Sound effects</span><button class="sw on" id="swSound" role="switch" aria-label="Sound effects"></button></div></div>
+  <button class="btn out" id="logout">Log out</button><p class="msg">Email, passwords and shared leaderboards come in v4 with a server.</p></div>
+
+ <nav aria-label="Main"><div class="pill" id="pill"></div>
+  <button data-v="home" aria-label="Home"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></button>
+  <button data-v="scan" aria-label="Scan"><svg class="i" viewBox="0 0 24 24"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3M8 12h8"/></svg></button>
+  <button data-v="map" aria-label="Bins"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></button>
+  <button data-v="me" aria-label="Profile"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button></nav>
 </section>
 </main>
+
+<!-- ID scanner modal -->
+<div class="modal" id="mScan"><div class="sheet"><h3>Scan your student ID</h3><video id="cam" playsinline muted></video>
+ <button class="btn" id="scanBtn" style="margin-top:10px">Start camera</button>
+ <label class="msg" for="sid" style="display:block;margin-top:12px">Or upload a barcode photo, or type the number</label><input type="text" id="sid" inputmode="numeric">
+ <div class="stack"><button class="btn out" id="upBtn">Upload barcode photo</button><button class="btn sun" id="useId">Use this ID</button><button class="btn out" data-close>Cancel</button></div>
+ <input type="file" id="bcFile" accept="image/*" hidden><p class="msg" id="loginMsg" role="status"></p></div></div>
+<!-- photo camera modal -->
+<div class="modal" id="mCam"><div class="sheet"><video id="pcam" playsinline muted></video><div class="stack" style="margin-top:12px"><button class="btn sun" id="shutter">Take photo</button><button class="btn out" data-close>Cancel</button></div></div></div>
+<!-- material info modal -->
+<div class="modal" id="mInfo"><div class="sheet"><div class="em" id="iEm" style="font-size:54px"></div><h3 id="iT" style="font-size:22px"></h3><p class="msg" id="iBin" style="font-weight:600"></p><p id="iD" style="margin:10px 0"></p><p class="msg" id="iEx"></p><button class="btn" data-close style="margin-top:14px">Got it</button></div></div>
+<!-- first-time AI loading -->
+<div id="boot" role="alertdialog" aria-live="polite"><div style="max-width:340px"><div class="ring" style="margin:auto"></div><h2>Setting up your on-device AI</h2>
+ <p class="msg">This only happens the first time. The AI model downloads once (about 90 MB), then scanning is instant and works offline. Please keep this page open.</p>
+ <div class="bar"><i id="bootBar"></i></div><p class="msg" id="bootTxt">Starting…</p></div></div>
+<div class="toast" id="toast" role="status"></div>
+
 <script>
-const MATS={Plastic:{c:"#7fd6ff",bin:"Recycling (blue)",t:"Rinse bottles, empty & cap on."},Glass:{c:"#ffd23f",bin:"Glass / Recycling",t:"Rinse jars and bottles."},Paper:{c:"#ffb38a",bin:"Paper (blue)",t:"Keep it dry and clean."},Compost:{c:"#7be495",bin:"Compost (green)",t:"Food scraps & napkins."},Landfill:{c:"#c9c6d9",bin:"Trash (black)",t:"Wrappers, chip bags, greasy boxes."}};
+const $=id=>document.getElementById(id);
+const MATS={Plastic:{em:"🧴",c:"#d6ecff",bin:"Recycling",d:"Bottles, cans, cups and containers. Empty and rinse them, and keep caps on bottles.",ex:"Water bottles, soda cans, yogurt cups, takeout containers"},
+Glass:{em:"🫙",c:"#d9f5e8",bin:"Recycling",d:"Glass bottles and jars. Rinse them out. Broken glass or mirrors don't go in.",ex:"Juice bottles, sauce jars, kombucha bottles"},
+Paper:{em:"📄",c:"#fff1c9",bin:"Recycling",d:"Clean, dry paper and cardboard. Flatten boxes.",ex:"Notebook paper, flyers, cardboard boxes, cartons"},
+Compost:{em:"🍎",c:"#d5f5d0",bin:"Compost",d:"Food scraps and soiled paper that can break down into soil.",ex:"Fruit peels, coffee grounds, napkins, greasy pizza boxes"},
+Landfill:{em:"🍬",c:"#e4e7eb",bin:"Trash",d:"Things that can't be recycled or composted, like thin plastic and mixed materials.",ex:"Candy wrappers, chip bags, plastic bags, straws, foam"}};
+const BINCOL={Recycling:"#3b82f6",Compost:"#22a35a",Trash:"#4b5563"};
 const BINS=[{n:"Library entrance",d:"120 m",x:25,y:30},{n:"Student Union",d:"250 m",x:62,y:22},{n:"Science Hall",d:"400 m",x:45,y:55},{n:"Gym lobby",d:"600 m",x:78,y:68},{n:"Dining Hall",d:"750 m",x:20,y:76}];
 const BADGES=[["🌱","First Toss",s=>s.items>=1],["🔥","3-Day Streak",s=>s.streak>=3],["♻️","10 Items",s=>s.items>=10],["🏆","500 Points",s=>s.pts>=500]];
-const $=id=>document.getElementById(id);
-let S=null,cur=null,blob=null;
+const FACTS={Plastic:["Only about 9% of all plastic ever made has been recycled worldwide."],Glass:["Glass can be recycled over and over without losing quality."],Paper:["Roughly two-thirds of paper used in the US gets recycled."],Compost:["Food scraps are the largest single material in US landfills."],Landfill:["The average American generates about 4.9 pounds of trash every day."],can:["Recycling an aluminum can uses about 95% less energy than making a new one."]};
+const binSvg=c=>`<svg class="bin" viewBox="0 0 64 64"><rect x="10" y="12" width="44" height="8" rx="3" fill="${c}" opacity=".75"/><rect x="26" y="7" width="12" height="6" rx="2" fill="${c}"/><path d="M14 24h36l-3 32a3 3 0 01-3 3H20a3 3 0 01-3-3z" fill="${c}"/><path d="M26 31v21M32 31v21M38 31v21" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/></svg>`;
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-function show(v){document.querySelectorAll('#app .view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v))}
+let S=null,cur=null,blob=null,onId=null;
+/* ---------- sound ---------- */
+let AC=null;
+function tone(f,d,t,g,s,sl){if(store.get('bb3:mute'))return;try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),v=AC.createGain(),n=AC.currentTime+(s||0);o.type=t||'sine';o.frequency.setValueAtTime(f,n);if(sl)o.frequency.exponentialRampToValueAtTime(f*sl,n+d);v.gain.setValueAtTime(g||.05,n);v.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(v);v.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
+const SFX={hover:()=>tone(1300,.04,'sine',.012),click:()=>tone(520,.09,'triangle',.06,0,1.7),nav:()=>tone(380,.2,'sine',.05,0,2.2),ok:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.2,'triangle',.06,i*.08)),bad:()=>tone(200,.28,'sawtooth',.035,0,.6),lvl:()=>[392,523,659,784,1047].forEach((f,i)=>tone(f,.22,'square',.03,i*.09))};
+document.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&e.target.closest&&e.target.matches('button,.mat'))SFX.hover()},true);
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button,.mat');if(b&&!b.closest('nav'))SFX.click()});
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2400)}
+/* ---------- nav + screens ---------- */
+function screen(id){document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('on',e.id===id))}
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>screen('welcome'));
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeAll());
+function closeAll(){document.querySelectorAll('.modal').forEach(m=>m.classList.remove('on'));stopCam();stopPcam()}
+const order=['home','scan','map','me'];let curV='home';
+function movePill(btn,first){const p=$('pill'),l=btn.offsetLeft,w=btn.offsetWidth,ol=+(p.dataset.l||l),ow=+(p.dataset.w||w);
+  if(first){p.style.transition='none'}else p.style.transition='';
+  const nl=Math.min(l,ol),nr=Math.max(l+w,ol+ow);p.style.transform=`translateX(${nl}px)`;p.style.width=(nr-nl)+'px';
+  setTimeout(()=>{p.style.transform=`translateX(${l}px)`;p.style.width=w+'px'},first?0:150);p.dataset.l=l;p.dataset.w=w}
+function show(v,first){document.documentElement.style.setProperty('--dir',order.indexOf(v)>=order.indexOf(curV)?1:-1);curV=v;
+  document.querySelectorAll('#app .view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
+  document.querySelectorAll('nav button').forEach(b=>{const on=b.dataset.v===v;b.setAttribute('aria-current',on);if(on)movePill(b,first)});if(!first)SFX.nav()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+/* ---------- ID scanner (shared) ---------- */
 // ---- barcode: native BarcodeDetector if present, else zxing-wasm (fast C++ decoder) ----
 const FORMATS=["Code128","Code39","Codabar","ITF","EAN-13","UPC-A","QRCode"]; // trim to your ID's format for max speed
 let camStream=null,scanning=false,nativeDet=null;
@@ -174,22 +209,51 @@ $('bcFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;
     if(t){$('sid').value=t;$('loginMsg').textContent="Got it: "+t}else $('loginMsg').textContent="No barcode found. Try a sharper, closer photo."}
   catch(err){$('loginMsg').textContent="Couldn't read that photo."}
   e.target.value=""};
-$('goBtn').onclick=()=>{const id=$('sid').value.trim();if(!/^[A-Za-z0-9-]{4,20}$/.test(id)){$('loginMsg').textContent="Enter 4–20 letters or numbers from your student ID.";return}
-  stopCam();S=store.get('bb:'+id)||{id,pts:0,items:0,streak:0,last:null,mats:{}};store.set('bb:last',id);enter()};
-$('logout').onclick=()=>{store.set('bb:last',null);location.reload()};
-function enter(){$('login').classList.remove('on');$('login').style.display='none';$('app').style.display='block';render();show('home')}
-// ---- render ----
-function render(){
-  const lv=Math.floor(S.pts/100)+1;
-  $('uid').textContent="ID "+S.id;$('lvl').textContent="Level "+lv;
-  $('sItems').textContent=S.items;$('sStreak').textContent=S.streak;$('sPts').textContent=S.pts;
-  $('xp').style.width=(S.pts%100)+"%";$('xpCap').textContent=(100-S.pts%100)+" points to level "+(lv+1);
-  $('mats').innerHTML=Object.entries(MATS).map(([k,m])=>`<div class="mat" style="background:${m.c}"><b>${k}</b>${m.bin}<br>${m.t}</div>`).join('');
+
+function openScanner(cb){onId=cb;$('sid').value='';$('loginMsg').textContent='';$('mScan').classList.add('on')}
+$('useId').onclick=()=>{const v=$('sid').value.trim();if(!/^[A-Za-z0-9-]{4,20}$/.test(v)){$('loginMsg').textContent="Enter 4–20 letters or numbers.";SFX.bad();return}const cb=onId;closeAll();if(cb)cb(v)};
+/* ---------- accounts (this device only until v4) ---------- */
+const key=n=>'bb3:u:'+n.toLowerCase();
+function newUser(n,id){return{name:n,id:id||null,pts:0,items:0,streak:0,last:null,mats:{},avatar:null,theme:null}}
+function save(){store.set(key(S.name),S);if(S.id)store.set('bb3:id:'+S.id,S.name)}
+let pendingId=null;
+$('toSign').onclick=()=>{screen('signup');$('suName').value='';pendingId=null;$('suIdMsg').textContent="Linking lets you log in fast by scanning your barcode."};
+$('toLog').onclick=()=>screen('login');
+$('suId').onclick=()=>openScanner(v=>{pendingId=v;$('suIdMsg').textContent="ID linked: "+v;SFX.ok()});
+$('suGo').onclick=()=>{const n=$('suName').value.trim();if(!/^[A-Za-z0-9_ ]{3,20}$/.test(n)){$('suMsg').textContent="Username: 3–20 letters, numbers or spaces.";SFX.bad();return}
+  if(store.get(key(n))){$('suMsg').textContent="That username is taken on this device.";SFX.bad();return}
+  if(pendingId&&store.get('bb3:id:'+pendingId)){$('suMsg').textContent="That ID is already linked to an account.";SFX.bad();return}
+  S=newUser(n,pendingId);save();store.set('bb3:last',n);SFX.ok();enter()};
+$('lgScan').onclick=()=>openScanner(v=>{const n=store.get('bb3:id:'+v);if(n&&store.get(key(n))){S=store.get(key(n));store.set('bb3:last',n);SFX.ok();enter()}else{$('lgMsg').textContent="No account linked to that ID yet.";SFX.bad()}});
+$('lgGo').onclick=()=>{const n=$('lgName').value.trim(),u=n&&store.get(key(n));if(u){S=u;store.set('bb3:last',S.name);SFX.ok();enter()}else{$('lgMsg').textContent="No account with that username on this device.";SFX.bad()}};
+$('logout').onclick=()=>{store.set('bb3:last',null);location.reload()};
+function enter(){screen('app');applyTheme();render();curV='home';show('home',true)}
+/* ---------- render ---------- */
+function setAv(e,s){e.style.backgroundImage=s.avatar?`url(${s.avatar})`:'';e.textContent=s.avatar?'':s.name[0].toUpperCase()}
+function render(){const lv=Math.floor(S.pts/100)+1;
+  setAv($('hAv'),S);setAv($('pAv'),S);$('hName').textContent=S.name;$('hLv').textContent="Level "+lv;$('hPts').textContent=S.pts;
+  $('lvA').textContent="Level "+lv;$('lvB').textContent=(100-S.pts%100)+" pts to level "+(lv+1);$('xp').style.width=(S.pts%100)+"%";
+  $('mats').innerHTML=Object.entries(MATS).map(([k,m])=>`<button class="mat" data-m="${k}"><div class="em" style="background:${m.c}">${m.em}</div><b>${k}</b><small>${m.bin} bin</small></button>`).join('');
+  document.querySelectorAll('.mat').forEach(b=>b.onclick=()=>{const m=MATS[b.dataset.m];$('iEm').textContent=m.em;$('iT').textContent=b.dataset.m;$('iBin').textContent="Goes in: "+m.bin+" bin";$('iD').textContent=m.d;$('iEx').textContent="Examples: "+m.ex;$('mInfo').classList.add('on')});
   $('badges').innerHTML=BADGES.map(b=>`<div class="badge ${b[2](S)?'got':''}"><div>${b[0]}</div>${b[1]}</div>`).join('');
   $('binList').innerHTML=BINS.map(b=>`<li><span>${b.n}</span><b>${b.d}</b></li>`).join('');
   $('map').innerHTML=BINS.map(b=>`<span class="pin" style="left:${b.x}%;top:${b.y}%">${b.d}</span>`).join('');
-}
-// ---- analyze ----
+  $('pName').value=S.name;$('mItems').textContent=S.items;$('mStreak').textContent=S.streak;$('mPts').textContent=S.pts;$('mId').textContent=S.id||"Not linked";
+  $('swTheme').classList.toggle('on',document.documentElement.dataset.theme==='dark');$('swSound').classList.toggle('on',!store.get('bb3:mute'))}
+function applyTheme(){const t=store.get('bb3:theme');if(t)document.documentElement.dataset.theme=t}
+$('swTheme').onclick=()=>{const d=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=d?'dark':'light';store.set('bb3:theme',d?'dark':'light');render()};
+$('swSound').onclick=()=>{store.set('bb3:mute',!store.get('bb3:mute'));render();SFX.click()};
+$('saveName').onclick=()=>{const n=$('pName').value.trim();if(!/^[A-Za-z0-9_ ]{3,20}$/.test(n)){toast("Username: 3–20 letters or numbers");SFX.bad();return}
+  if(n.toLowerCase()!==S.name.toLowerCase()&&store.get(key(n))){toast("Username taken");SFX.bad();return}
+  try{localStorage.removeItem(key(S.name))}catch(e){}S.name=n;save();store.set('bb3:last',n);render();toast("Saved!");SFX.ok()};
+$('relink').onclick=()=>openScanner(v=>{if(store.get('bb3:id:'+v)&&store.get('bb3:id:'+v)!==S.name){toast("ID already linked elsewhere");SFX.bad();return}S.id=v;save();render();toast("ID linked");SFX.ok()});
+$('avBtn').onclick=()=>$('avFile').click();
+$('avFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=128;const s=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-s)/2,(i.height-s)/2,s,s,0,0,128,128);S.avatar=c.toDataURL('image/jpeg',.8);save();render();SFX.ok()};i.src=URL.createObjectURL(f);e.target.value=""};
+/* ---------- first-time AI loader ---------- */
+const files={};
+function bootShow(){$('boot').classList.add('on')}
+function bootHide(){$('boot').classList.remove('on')}
+function onProg(p){if(p.status==='progress'&&p.total){files[p.file]=[p.loaded,p.total];let l=0,t=0;for(const k in files){l+=files[k][0];t+=files[k][1]}const pc=Math.min(99,Math.round(l/t*100));$('bootBar').style.width=pc+'%';$('bootTxt').textContent="Downloading… "+pc+"%"}else if(p.status==='ready'){$('bootBar').style.width='100%';$('bootTxt').textContent="Almost ready…"}else if(p.status==='initiate'){$('bootTxt').textContent="Preparing…"}}
 // ---- analyzer: ENGINE "device" = CLIP model running on the phone (no server, unlimited); "ollama" = your own server ----
 const CONFIG={engine:"device",url:"http://localhost:11434",model:"gemma3:4b"};
 const ITEMS=[ // [what the model looks for, display name, material, points, tip]
@@ -216,12 +280,12 @@ const ITEMS=[ // [what the model looks for, display name, material, points, tip]
 let clf=null;
 async function analyze(b){
   if(CONFIG.engine==="ollama")return ollama(b);
-  if(!clf){$('scanMsg').textContent="Downloading the on-device AI (first time only, ~90 MB)…";
+  if(!clf){bootShow();
     const T=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
     const dev=navigator.gpu?"webgpu":"wasm";
-    try{clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{device:dev,dtype:dev==="webgpu"?"fp32":"q8"})}
-    catch(e){clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{device:"wasm",dtype:"q8"})}
-    $('scanMsg').textContent="Analyzing your trash…"}
+    try{clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{progress_callback:onProg,device:dev,dtype:dev==="webgpu"?"fp32":"q8"})}
+    catch(e){clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{progress_callback:onProg,device:"wasm",dtype:"q8"})}
+    bootHide()}
   const url=URL.createObjectURL(b),out=await clf(url,ITEMS.map(i=>i[0]),{hypothesis_template:"a photo of {}."});
   const top=out[0],it=ITEMS.find(i=>i[0]===top.label);
   if(!it[2]||top.score<0.3)throw new Error("unsure");
@@ -231,23 +295,30 @@ async function ollama(b){
   const res=await fetch(CONFIG.url+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:CONFIG.model,prompt:PROMPT,images:[await b64(b)],stream:false,format:"json"})});
   if(!res.ok)throw new Error("bad status");
   return JSON.parse((await res.json()).response)}
-$('snap').onclick=()=>$('photo').click();
+
+/* ---------- in-app camera ---------- */
+let pStream=null;
+function stopPcam(){if(pStream){pStream.getTracks().forEach(t=>t.stop());pStream=null}$('pcam').style.display='none'}
+$('snap').onclick=async()=>{try{pStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280}}});const v=$('pcam');v.srcObject=pStream;v.style.display='block';$('mCam').classList.add('on');await v.play()}catch(e){stopPcam();$('photo').click()}};
+$('photo').onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)handle(f)};
+$('shutter').onclick=()=>{const v=$('pcam'),c=document.createElement('canvas'),s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;c.getContext('2d').drawImage(v,0,0,c.width,c.height);SFX.click();c.toBlob(b=>{closeAll();handle(b)},'image/jpeg',.85)};
 function shrink(f){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(ok,'image/jpeg',.8)};i.onerror=no;i.src=URL.createObjectURL(f)})}
-$('photo').onchange=async e=>{const f=e.target.files[0];if(!f)return;
-  $('res').style.display='none';cur=null;$('scanMsg').textContent="Analyzing your trash…";
-  try{blob=await shrink(f);$('prev').src=URL.createObjectURL(blob);$('prev').style.display='block';
+async function handle(f){cur=null;$('res').style.display='none';$('scanMsg').textContent="";
+  try{blob=await shrink(f);$('prev').src=URL.createObjectURL(blob);$('pv').style.display='block';$('spin').classList.add('on');
     const r=await analyze(blob);
-    const m=MATS[r.material]?r.material:"Landfill";cur={item:r.item,m,pts:Math.max(1,Math.min(60,Math.round(r.points)||5)),tip:r.tip};
-    $('rName').textContent=cur.item;$('rTip').textContent=cur.tip;$('rPts').textContent="+"+cur.pts;$('rMat').textContent=m;$('rBin').innerHTML=`<span class="bin" style="background:${MATS[m].c}">${MATS[m].bin}</span>`;
-    $('res').style.display='block';$('scanMsg').textContent="";
-  }catch(err){$('scanMsg').textContent="Couldn't identify that. Move closer, center one item, use good light, and try again."}
-  e.target.value=""};
-$('addBin').onclick=()=>{if(!cur)return;const t=new Date().toDateString();
+    const m=MATS[r.material]?r.material:"Landfill",bin=MATS[m].bin;cur={item:r.item,m,pts:Math.max(1,Math.min(60,Math.round(r.points)||5)),tip:r.tip};
+    $('rName').textContent=cur.item;$('rTip').textContent=cur.tip;$('rPts').textContent="+"+cur.pts;$('rMat').textContent=m;$('rBin').textContent=bin;$('rBinIcon').innerHTML=binSvg(BINCOL[bin]);
+    const fl=(r.item==="Aluminum can"?FACTS.can:FACTS[m]);$('rFact').textContent="Did you know? "+fl[0];
+    $('res').style.display='block';SFX.ok()
+  }catch(err){bootHide();$('scanMsg').textContent="Couldn't identify that. Move closer, center one item, use good light, and try again.";SFX.bad()}
+  $('spin').classList.remove('on')}
+$('addBin').onclick=()=>{if(!cur)return;const t=new Date().toDateString(),lv0=Math.floor(S.pts/100);
   if(S.last!==t){const y=new Date(Date.now()-864e5).toDateString();S.streak=S.last===y?S.streak+1:1;S.last=t}
-  S.pts+=cur.pts;S.items++;S.mats[cur.m]=(S.mats[cur.m]||0)+1;store.set('bb:'+S.id,S);
-  $('scanMsg').textContent="+"+cur.pts+" points! Now walk it to the "+MATS[cur.m].bin+" bin.";cur=null;$('res').style.display='none';$('prev').style.display='none';render()};
-try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-const last=store.get('bb:last');if(last){$('sid').value=last;const saved=store.get('bb:'+last);if(saved){S=saved;enter()}}
+  S.pts+=cur.pts;S.items++;S.mats[cur.m]=(S.mats[cur.m]||0)+1;save();
+  toast("+"+cur.pts+" points! Walk it to the "+MATS[cur.m].bin+" bin.");cur=null;$('res').style.display='none';$('pv').style.display='none';render();
+  if(Math.floor(S.pts/100)>lv0){setTimeout(()=>{SFX.lvl();toast("Level up! Level "+(Math.floor(S.pts/100)+1))},900)}else SFX.ok()};
+/* ---------- start ---------- */
+applyTheme();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+const last=store.get('bb3:last');if(last&&store.get(key(last))){S=store.get(key(last));enter()}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-</script>
-</body></html>
+</script></body></html>
