@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2d29c4"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="Snap your trash, find the right bin, earn points.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<title>BinBuddy – Campus Recycling Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1eeff;--card:#fff;--ink:#1b1830;--mute:#6b6785;--pur:#8b3cf6;--lime:#b5f01f;--org:#ff9a1f;--grn:#2fc16b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14121f;--card:#1f1c30;--ink:#f4f2ff;--mute:#a29fc0}}
+:root[data-theme="dark"]{--bg:#14121f;--card:#1f1c30;--ink:#f4f2ff;--mute:#a29fc0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:440px;min-height:100vh;padding:16px 16px 110px}
+h1,h2,h3,p{margin:0}
+.hero{background:var(--pur);color:#fff;border-radius:28px;padding:16px}
+.who{background:#fff;color:#1b1830;border-radius:20px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.who b{display:block;font-size:15px}.who small{color:#6b6785}
+.lvl{background:#1b1830;color:var(--lime);border-radius:12px;padding:4px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat{background:#1b1830;border-radius:18px;padding:12px 6px;text-align:center}
+.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:#cfc8ff}
+.bar{height:10px;background:#ffffff33;border-radius:9px;margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lime);border-radius:9px;transition:width .6s}
+.cap{font-size:12px;margin-top:6px;color:#e6e0ff}
+h2{font-size:18px;margin:22px 0 10px}
+.card{background:var(--card);border-radius:22px;padding:16px;margin-bottom:12px}
+.mats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.mat{border-radius:20px;padding:14px;color:#1b1830;font-size:13px}
+.mat b{display:block;font-size:16px;margin-bottom:4px}
+button{font:inherit;cursor:pointer;border:0}
+.big{width:100%;background:var(--lime);color:#1b1830;font-weight:800;padding:16px;border-radius:22px;font-size:16px}
+.big:disabled{opacity:.5}
+.ghost{background:transparent;color:var(--pur);font-weight:600;padding:8px 12px;border:2px solid var(--pur);border-radius:14px}
+input{font:inherit;width:100%;padding:14px;border-radius:16px;border:2px solid var(--mute);background:var(--bg);color:var(--ink);margin:10px 0}
+button:focus-visible,input:focus-visible{outline:3px solid var(--org);outline-offset:2px}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--pur);padding:8px;border-radius:40px;display:flex;gap:8px;box-shadow:0 8px 24px #0005}
+nav button{background:transparent;color:#fff;padding:12px 18px;border-radius:30px;font-weight:600;font-size:14px}
+nav button[aria-current=true]{background:#1b1830;color:var(--lime)}
+.view{display:none}.view.on{display:block}
+.preview{width:100%;border-radius:22px;max-height:300px;object-fit:cover;display:none;margin-bottom:12px}
+.result{background:var(--pur);color:#fff;border-radius:24px;padding:16px;margin-top:12px}
+.row{display:flex;justify-content:space-between;text-align:center;background:#1b1830;border-radius:18px;padding:12px;margin:12px 0}
+.row span{font-size:12px;color:#cfc8ff;display:block}.row b{font-size:16px}
+.bin{display:inline-block;padding:4px 12px;border-radius:12px;font-weight:800;color:#1b1830}
+.badges{display:flex;gap:10px;flex-wrap:wrap}
+.badge{flex:1 1 90px;text-align:center;background:var(--card);border-radius:18px;padding:12px 6px;font-size:12px;opacity:.4}
+.badge.got{opacity:1;outline:3px solid var(--org)}.badge div{font-size:28px}
+.bins li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #8884;list-style:none}
+ul{padding:0;margin:0}
+.msg{font-size:13px;color:var(--mute);margin-top:6px}
+video{width:100%;border-radius:18px;display:none}
+.mapbox{background:#e5e4ee;border-radius:22px;height:240px;position:relative;overflow:hidden;margin-bottom:12px}
+.pin{position:absolute;background:#1b1830;color:#fff;font-size:11px;padding:4px 8px;border-radius:10px;transform:translate(-50%,-50%);white-space:nowrap}
+.pin:after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1b1830;border-bottom:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<main>
+<!-- LOGIN -->
+<section id="login" class="view on">
+  <div class="hero" style="margin-top:30px;text-align:center;padding:30px 20px">
+    <img src="icons/icon-192.png" alt="BinBuddy logo" width="96" height="96" style="border-radius:24px">
+    <h1 style="font-size:32px;font-weight:800">BinBuddy</h1>
+    <p style="margin-top:6px;color:#e6e0ff">Snap your trash. Find the right bin. Rack up points.</p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Link your student ID</h3>
+    <video id="cam" playsinline muted></video>
+    <button class="big" id="scanBtn" style="margin-top:10px">Scan ID barcode</button>
+    <label class="msg" for="sid" style="display:block;margin-top:12px">Or upload a photo of the barcode, or type the number</label>
+    <input id="sid" inputmode="numeric" placeholder="Student ID number">
+    <div style="display:flex;gap:8px">
+      <button class="ghost" id="upBtn">Upload barcode photo</button>
+      <button class="ghost" id="goBtn" style="background:var(--pur);color:#fff">Create account</button>
+    </div>
+    <input type="file" id="bcFile" accept="image/*" hidden>
+    <p class="msg" id="loginMsg" role="status"></p>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" style="display:none">
+  <div class="hero">
+    <div class="who"><div><b id="uid"></b><small>Campus Recycler</small></div><span class="lvl" id="lvl"></span></div>
+    <div class="stats">
+      <div class="stat"><b id="sItems">0</b><span>Items</span></div>
+      <div class="stat"><b id="sStreak">0</b><span>Day streak</span></div>
+      <div class="stat"><b id="sPts">0</b><span>Points</span></div>
+    </div>
+    <div class="bar"><i id="xp" style="width:0"></i></div>
+    <p class="cap" id="xpCap"></p>
+  </div>
+
+  <div class="view on" id="v-home">
+    <h2>Where does it go?</h2>
+    <div class="mats" id="mats"></div>
+    <h2>Badges</h2>
+    <div class="badges" id="badges"></div>
+    <button class="ghost" id="logout" style="margin-top:18px">Log out</button>
+  </div>
+
+  <div class="view" id="v-scan">
+    <h2>Scan your trash</h2>
+    <img class="preview" id="prev" alt="Your photo">
+    <button class="big" id="snap">Take or upload photo</button>
+    <input type="file" id="photo" accept="image/*" capture="environment" hidden>
+    <p class="msg" id="scanMsg" role="status"></p>
+    <div class="result" id="res" style="display:none">
+      <h3 id="rName"></h3><p id="rTip" style="font-size:13px;margin-top:4px"></p>
+      <div class="row"><div><span>Points</span><b id="rPts"></b></div><div><span>Material</span><b id="rMat"></b></div><div><span>Bin</span><b id="rBin"></b></div></div>
+      <button class="big" id="addBin">Add to bin</button>
+    </div>
+  </div>
+
+  <div class="view" id="v-map">
+    <h2>Bins near you</h2>
+    <div class="mapbox" id="map"></div>
+    <div class="card"><ul class="bins" id="binList"></ul></div>
+    <p class="msg">Sample locations. Replace the BINS list in the code with your real campus bins.</p>
+  </div>
+
+  <nav aria-label="Main">
+    <button data-v="home" aria-current="true">Home</button>
+    <button data-v="scan">Scan</button>
+    <button data-v="map">Bins</button>
+  </nav>
+</section>
+</main>
+<script>
+const MATS={Plastic:{c:"#7fd6ff",bin:"Recycling (blue)",t:"Rinse bottles, empty & cap on."},Glass:{c:"#ffd23f",bin:"Glass / Recycling",t:"Rinse jars and bottles."},Paper:{c:"#ffb38a",bin:"Paper (blue)",t:"Keep it dry and clean."},Compost:{c:"#7be495",bin:"Compost (green)",t:"Food scraps & napkins."},Landfill:{c:"#c9c6d9",bin:"Trash (black)",t:"Wrappers, chip bags, greasy boxes."}};
+const BINS=[{n:"Library entrance",d:"120 m",x:25,y:30},{n:"Student Union",d:"250 m",x:62,y:22},{n:"Science Hall",d:"400 m",x:45,y:55},{n:"Gym lobby",d:"600 m",x:78,y:68},{n:"Dining Hall",d:"750 m",x:20,y:76}];
+const BADGES=[["🌱","First Toss",s=>s.items>=1],["🔥","3-Day Streak",s=>s.streak>=3],["♻️","10 Items",s=>s.items>=10],["🏆","500 Points",s=>s.pts>=500]];
+const $=id=>document.getElementById(id);
+let S=null,cur=null,blob=null;
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function show(v){document.querySelectorAll('#app .view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v))}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+// ---- barcode (ZXing: runs on the device, unlimited scans) ----
+let reader=null;
+function zx(){return window.ZXing?(reader||(reader=new ZXing.BrowserMultiFormatReader())):null}
+function stopCam(){try{if(reader)reader.reset()}catch(e){}$('cam').style.display='none'}
+$('scanBtn').onclick=async()=>{
+  const r=zx();if(!r){$('loginMsg').textContent="Scanner is still loading. Check your connection and try again.";return}
+  $('cam').style.display='block';$('loginMsg').textContent="Hold the barcode inside the frame…";
+  try{await r.decodeFromConstraints({video:{facingMode:"environment"}},$('cam'),res=>{if(res){stopCam();$('sid').value=res.getText();$('loginMsg').textContent="Got it: "+res.getText()+". Tap Create account."}})}
+  catch(e){stopCam();$('loginMsg').textContent="Camera is blocked. Allow camera access, upload a barcode photo, or type your ID."}
+};
+$('upBtn').onclick=()=>$('bcFile').click();
+$('bcFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const r=zx();if(!r){$('loginMsg').textContent="Scanner is still loading. Try again.";return}
+  try{const res=await r.decodeFromImageUrl(URL.createObjectURL(f));$('sid').value=res.getText();$('loginMsg').textContent="Got it: "+res.getText()}
+  catch(err){$('loginMsg').textContent="No barcode found. Try a sharper, closer photo."}
+  e.target.value=""};
+$('goBtn').onclick=()=>{const id=$('sid').value.trim();if(!/^[A-Za-z0-9-]{4,20}$/.test(id)){$('loginMsg').textContent="Enter 4–20 letters or numbers from your student ID.";return}
+  stopCam();S=store.get('bb:'+id)||{id,pts:0,items:0,streak:0,last:null,mats:{}};store.set('bb:last',id);enter()};
+$('logout').onclick=()=>{store.set('bb:last',null);location.reload()};
+function enter(){$('login').classList.remove('on');$('login').style.display='none';$('app').style.display='block';render();show('home')}
+// ---- render ----
+function render(){
+  const lv=Math.floor(S.pts/100)+1;
+  $('uid').textContent="ID "+S.id;$('lvl').textContent="Level "+lv;
+  $('sItems').textContent=S.items;$('sStreak').textContent=S.streak;$('sPts').textContent=S.pts;
+  $('xp').style.width=(S.pts%100)+"%";$('xpCap').textContent=(100-S.pts%100)+" points to level "+(lv+1);
+  $('mats').innerHTML=Object.entries(MATS).map(([k,m])=>`<div class="mat" style="background:${m.c}"><b>${k}</b>${m.bin}<br>${m.t}</div>`).join('');
+  $('badges').innerHTML=BADGES.map(b=>`<div class="badge ${b[2](S)?'got':''}"><div>${b[0]}</div>${b[1]}</div>`).join('');
+  $('binList').innerHTML=BINS.map(b=>`<li><span>${b.n}</span><b>${b.d}</b></li>`).join('');
+  $('map').innerHTML=BINS.map(b=>`<span class="pin" style="left:${b.x}%;top:${b.y}%">${b.d}</span>`).join('');
+}
+// ---- analyze ----
+// ---- analyzer: point CONFIG.url at your Ollama (or any compatible) server ----
+const CONFIG={url:"http://localhost:11434",model:"gemma3:4b"};
+const PROMPT=`You are a campus recycling bot. Look at the photo and identify the main trash item. Reply ONLY with JSON: {"item":"short name","material":"Plastic|Glass|Paper|Compost|Landfill","points":integer,"tip":"one short sentence on how to dispose of it"}. Points: tiny wrappers or scraps 5-10; paper, cups, snack packaging 10-20; cans, cartons, compostables 20-35; bottles, jars and bigger recyclables 40-60.`;
+const b64=b=>new Promise(ok=>{const f=new FileReader();f.onload=()=>ok(f.result.split(',')[1]);f.readAsDataURL(b)});
+async function analyze(b){
+  const res=await fetch(CONFIG.url+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:CONFIG.model,prompt:PROMPT,images:[await b64(b)],stream:false,format:"json"})});
+  if(!res.ok)throw new Error("bad status");
+  return JSON.parse((await res.json()).response)}
+$('snap').onclick=()=>$('photo').click();
+function shrink(f){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(ok,'image/jpeg',.8)};i.onerror=no;i.src=URL.createObjectURL(f)})}
+$('photo').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  $('res').style.display='none';cur=null;$('scanMsg').textContent="Analyzing your trash…";
+  try{blob=await shrink(f);$('prev').src=URL.createObjectURL(blob);$('prev').style.display='block';
+    const r=await analyze(blob);
+    const m=MATS[r.material]?r.material:"Landfill";cur={item:r.item,m,pts:Math.max(1,Math.min(60,Math.round(r.points)||5)),tip:r.tip};
+    $('rName').textContent=cur.item;$('rTip').textContent=cur.tip;$('rPts').textContent="+"+cur.pts;$('rMat').textContent=m;$('rBin').innerHTML=`<span class="bin" style="background:${MATS[m].c}">${MATS[m].bin}</span>`;
+    $('res').style.display='block';$('scanMsg').textContent="";
+  }catch(err){$('scanMsg').textContent="Couldn't reach the trash scanner. Make sure the analyzer server is running, then try again."}
+  e.target.value=""};
+$('addBin').onclick=()=>{if(!cur)return;const t=new Date().toDateString();
+  if(S.last!==t){const y=new Date(Date.now()-864e5).toDateString();S.streak=S.last===y?S.streak+1:1;S.last=t}
+  S.pts+=cur.pts;S.items++;S.mats[cur.m]=(S.mats[cur.m]||0)+1;store.set('bb:'+S.id,S);
+  $('scanMsg').textContent="+"+cur.pts+" points! Now walk it to the "+MATS[cur.m].bin+" bin.";cur=null;$('res').style.display='none';$('prev').style.display='none';render()};
+const last=store.get('bb:last');if(last){$('sid').value=last}
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body></html>
