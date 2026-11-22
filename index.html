@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2d29c4"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="Snap your trash, find the right bin, earn points.">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
 <title>BinBuddy – Campus Recycling Game</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
@@ -138,20 +138,41 @@ let S=null,cur=null,blob=null;
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 function show(v){document.querySelectorAll('#app .view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v))}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
-// ---- barcode (ZXing: runs on the device, unlimited scans) ----
-let reader=null;
-function zx(){return window.ZXing?(reader||(reader=new ZXing.BrowserMultiFormatReader())):null}
-function stopCam(){try{if(reader)reader.reset()}catch(e){}$('cam').style.display='none'}
+// ---- barcode: native BarcodeDetector if present, else zxing-wasm (fast C++ decoder) ----
+const FORMATS=["Code128","Code39","Codabar","ITF","EAN-13","UPC-A","QRCode"]; // trim to your ID's format for max speed
+let camStream=null,scanning=false,nativeDet=null;
+try{nativeDet=new BarcodeDetector({formats:["code_128","code_39","codabar","itf","ean_13","upc_a","qr_code"]})}catch(e){}
+const wasmRead=()=>window.ZXingWASM&&ZXingWASM.readBarcodes;
+function stopCam(){scanning=false;if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}$('cam').style.display='none'}
+function gotId(t){stopCam();$('sid').value=t;$('loginMsg').textContent="Got it: "+t+". Tap Create account.";if(navigator.vibrate)navigator.vibrate(80)}
 $('scanBtn').onclick=async()=>{
-  const r=zx();if(!r){$('loginMsg').textContent="Scanner is still loading. Check your connection and try again.";return}
-  $('cam').style.display='block';$('loginMsg').textContent="Hold the barcode inside the frame…";
-  try{await r.decodeFromConstraints({video:{facingMode:"environment"}},$('cam'),res=>{if(res){stopCam();$('sid').value=res.getText();$('loginMsg').textContent="Got it: "+res.getText()+". Tap Create account."}})}
-  catch(e){stopCam();$('loginMsg').textContent="Camera is blocked. Allow camera access, upload a barcode photo, or type your ID."}
+  if(!nativeDet&&!wasmRead()){$('loginMsg').textContent="Scanner is still loading. Check your connection and try again.";return}
+  try{camStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}})}
+  catch(e){$('loginMsg').textContent="Camera is blocked. Allow camera access, upload a barcode photo, or type your ID.";return}
+  try{await camStream.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:"continuous"}]})}catch(e){}
+  const v=$('cam');v.srcObject=camStream;v.style.display='block';await v.play();scanning=true;$('loginMsg').textContent="Point at the barcode. It scans as it focuses.";
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});let n=0;
+  while(scanning){
+    try{
+      if(v.videoWidth){
+        let text=null;
+        if(nativeDet){const r=await nativeDet.detect(v);if(r.length)text=r[0].rawValue}
+        else{ // wide center band (barcodes are wide), downscaled for speed
+          const w=Math.min(v.videoWidth,1280),h=Math.round(w*0.5),sx=(v.videoWidth-v.videoWidth)/2,sh=v.videoHeight*0.5;
+          cv.width=w;cv.height=h;cx.drawImage(v,0,(v.videoHeight-sh)/2,v.videoWidth,sh,0,0,w,h);
+          const r=await ZXingWASM.readBarcodes(cx.getImageData(0,0,w,h),{formats:FORMATS,tryHarder:(++n%3===0),tryRotate:true,tryInvert:true,maxNumberOfSymbols:1});
+          if(r.length)text=r[0].text}
+        if(text)return gotId(text)}
+    }catch(e){}
+    await new Promise(r=>requestAnimationFrame(r))}
 };
 $('upBtn').onclick=()=>$('bcFile').click();
-$('bcFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const r=zx();if(!r){$('loginMsg').textContent="Scanner is still loading. Try again.";return}
-  try{const res=await r.decodeFromImageUrl(URL.createObjectURL(f));$('sid').value=res.getText();$('loginMsg').textContent="Got it: "+res.getText()}
-  catch(err){$('loginMsg').textContent="No barcode found. Try a sharper, closer photo."}
+$('bcFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{let t=null;
+    if(wasmRead()){const r=await ZXingWASM.readBarcodes(f,{formats:FORMATS,tryHarder:true,tryRotate:true,tryInvert:true,maxNumberOfSymbols:1});if(r.length)t=r[0].text}
+    else if(nativeDet){const r=await nativeDet.detect(await createImageBitmap(f));if(r.length)t=r[0].rawValue}
+    if(t){$('sid').value=t;$('loginMsg').textContent="Got it: "+t}else $('loginMsg').textContent="No barcode found. Try a sharper, closer photo."}
+  catch(err){$('loginMsg').textContent="Couldn't read that photo."}
   e.target.value=""};
 $('goBtn').onclick=()=>{const id=$('sid').value.trim();if(!/^[A-Za-z0-9-]{4,20}$/.test(id)){$('loginMsg').textContent="Enter 4–20 letters or numbers from your student ID.";return}
   stopCam();S=store.get('bb:'+id)||{id,pts:0,items:0,streak:0,last:null,mats:{}};store.set('bb:last',id);enter()};
@@ -169,11 +190,44 @@ function render(){
   $('map').innerHTML=BINS.map(b=>`<span class="pin" style="left:${b.x}%;top:${b.y}%">${b.d}</span>`).join('');
 }
 // ---- analyze ----
-// ---- analyzer: point CONFIG.url at your Ollama (or any compatible) server ----
-const CONFIG={url:"http://localhost:11434",model:"gemma3:4b"};
-const PROMPT=`You are a campus recycling bot. Look at the photo and identify the main trash item. Reply ONLY with JSON: {"item":"short name","material":"Plastic|Glass|Paper|Compost|Landfill","points":integer,"tip":"one short sentence on how to dispose of it"}. Points: tiny wrappers or scraps 5-10; paper, cups, snack packaging 10-20; cans, cartons, compostables 20-35; bottles, jars and bigger recyclables 40-60.`;
-const b64=b=>new Promise(ok=>{const f=new FileReader();f.onload=()=>ok(f.result.split(',')[1]);f.readAsDataURL(b)});
+// ---- analyzer: ENGINE "device" = CLIP model running on the phone (no server, unlimited); "ollama" = your own server ----
+const CONFIG={engine:"device",url:"http://localhost:11434",model:"gemma3:4b"};
+const ITEMS=[ // [what the model looks for, display name, material, points, tip]
+["a candy or snack wrapper","Snack wrapper","Landfill",5,"Wrappers are too thin to recycle. Trash bin."],
+["a chip bag","Chip bag","Landfill",8,"Foil-lined bags go in the trash."],
+["a plastic bag or plastic film","Plastic bag","Landfill",8,"Bags jam machines. Trash, or a store drop-off."],
+["a straw","Straw","Landfill",5,"Too small to recycle. Trash bin."],
+["a plastic fork, spoon or cutlery","Plastic cutlery","Landfill",6,"Trash bin."],
+["a styrofoam container","Styrofoam","Landfill",8,"Foam is not recyclable here. Trash bin."],
+["a used napkin or paper towel","Napkin","Compost",10,"Soiled paper goes in compost."],
+["food scraps or a fruit peel","Food scraps","Compost",25,"Compost bin."],
+["a paper coffee cup","Paper cup","Paper",15,"Empty it, then recycling or trash per campus rules."],
+["a sheet of paper or notebook paper","Paper","Paper",15,"Keep it dry and clean for paper recycling."],
+["a cardboard box","Cardboard","Paper",25,"Flatten it and put it in recycling."],
+["a pizza box","Pizza box","Compost",15,"Greasy cardboard goes in compost or trash."],
+["a milk or juice carton","Carton","Paper",30,"Rinse, then recycling."],
+["an aluminum soda can","Aluminum can","Plastic",35,"Rinse and put it in recycling."],
+["a plastic water bottle","Plastic bottle","Plastic",55,"Empty it, cap on, into recycling."],
+["a plastic cup","Plastic cup","Plastic",20,"Rinse, then recycling."],
+["a plastic food container","Plastic container","Plastic",30,"Rinse, then recycling."],
+["a glass bottle","Glass bottle","Glass",55,"Rinse, then glass or recycling bin."],
+["a glass jar","Glass jar","Glass",50,"Rinse, then glass or recycling bin."],
+["a person's face, hand or an empty background","",null,0,""]];
+let clf=null;
 async function analyze(b){
+  if(CONFIG.engine==="ollama")return ollama(b);
+  if(!clf){$('scanMsg').textContent="Downloading the on-device AI (first time only, ~90 MB)…";
+    const T=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
+    const dev=navigator.gpu?"webgpu":"wasm";
+    try{clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{device:dev,dtype:dev==="webgpu"?"fp32":"q8"})}
+    catch(e){clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{device:"wasm",dtype:"q8"})}
+    $('scanMsg').textContent="Analyzing your trash…"}
+  const url=URL.createObjectURL(b),out=await clf(url,ITEMS.map(i=>i[0]),{hypothesis_template:"a photo of {}."});
+  const top=out[0],it=ITEMS.find(i=>i[0]===top.label);
+  if(!it[2]||top.score<0.3)throw new Error("unsure");
+  return {item:it[1],material:it[2],points:it[3],tip:it[4]}}
+const b64=b=>new Promise(ok=>{const f=new FileReader();f.onload=()=>ok(f.result.split(',')[1]);f.readAsDataURL(b)});
+async function ollama(b){
   const res=await fetch(CONFIG.url+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:CONFIG.model,prompt:PROMPT,images:[await b64(b)],stream:false,format:"json"})});
   if(!res.ok)throw new Error("bad status");
   return JSON.parse((await res.json()).response)}
@@ -186,13 +240,14 @@ $('photo').onchange=async e=>{const f=e.target.files[0];if(!f)return;
     const m=MATS[r.material]?r.material:"Landfill";cur={item:r.item,m,pts:Math.max(1,Math.min(60,Math.round(r.points)||5)),tip:r.tip};
     $('rName').textContent=cur.item;$('rTip').textContent=cur.tip;$('rPts').textContent="+"+cur.pts;$('rMat').textContent=m;$('rBin').innerHTML=`<span class="bin" style="background:${MATS[m].c}">${MATS[m].bin}</span>`;
     $('res').style.display='block';$('scanMsg').textContent="";
-  }catch(err){$('scanMsg').textContent="Couldn't reach the trash scanner. Make sure the analyzer server is running, then try again."}
+  }catch(err){$('scanMsg').textContent="Couldn't identify that. Move closer, center one item, use good light, and try again."}
   e.target.value=""};
 $('addBin').onclick=()=>{if(!cur)return;const t=new Date().toDateString();
   if(S.last!==t){const y=new Date(Date.now()-864e5).toDateString();S.streak=S.last===y?S.streak+1:1;S.last=t}
   S.pts+=cur.pts;S.items++;S.mats[cur.m]=(S.mats[cur.m]||0)+1;store.set('bb:'+S.id,S);
   $('scanMsg').textContent="+"+cur.pts+" points! Now walk it to the "+MATS[cur.m].bin+" bin.";cur=null;$('res').style.display='none';$('prev').style.display='none';render()};
-const last=store.get('bb:last');if(last){$('sid').value=last}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+const last=store.get('bb:last');if(last){$('sid').value=last;const saved=store.get('bb:'+last);if(saved){S=saved;enter()}}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body></html>
