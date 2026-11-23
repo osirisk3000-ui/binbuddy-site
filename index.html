@@ -7,16 +7,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 <script defer src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <title>BinBuddy</title></head><body><main>
-<section class="screen on" id="welcome"><div class="hero"><div id="wMascot"></div><h1>BinBuddy</h1><p>Snap your trash. Find the right bin. Earn points.</p>
-<div class="stack"><button class="btn" id="toSign">Sign up</button><button class="btn out" id="toLog">Log in</button></div></div></section>
+<section class="screen on" id="splash"><div class="hero"><div id="spMascot"></div><p>Loading…</p></div></section>
+<section class="screen" id="welcome"><div class="hero"><div id="wMascot"></div><h1>BinBuddy</h1><p>Snap your trash. Find the right bin. Earn points.</p>
+<div class="stack"><button class="btn" id="toSign">Sign up</button><button class="btn out" id="toLog">Log in</button></div><p class="msg" id="welMsg" role="status"></p></div></section>
 <section class="screen" id="signup"><h2>Create your account</h2><div class="card">
-<label class="msg" for="suName">Choose a username</label><input type="text" id="suName" maxlength="20" autocomplete="username">
-<button class="btn out" id="suId">Link student ID (optional)</button><p class="msg" id="suIdMsg">Linking lets you log in fast by scanning your barcode.</p>
+<label class="msg" for="suEmail">Campus email</label><input type="email" id="suEmail" autocomplete="email" inputmode="email">
+<label class="msg" for="suPass">Password (8+ characters)</label><input type="password" id="suPass" autocomplete="new-password">
+<label class="msg" for="suName">Choose a username</label><input type="text" id="suName" maxlength="20" autocomplete="nickname">
+<button class="btn out" id="suId">Link student ID (optional)</button><p class="msg" id="suIdMsg">Optional. You can also link it later in Profile.</p>
 <button class="btn sun" id="suGo" style="margin-top:14px">Create account</button><p class="msg" id="suMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
-<section class="screen" id="login"><h2>Welcome back</h2><div class="card"><button class="btn" id="lgScan">Log in with ID barcode</button>
-<label class="msg" for="lgName" style="display:block;margin-top:14px">Or enter your username</label><input type="text" id="lgName" autocomplete="username">
-<button class="btn out" id="lgGo">Log in</button><p class="msg" id="lgMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
+<section class="screen" id="verify"><h2>Check your email</h2><div class="card"><p class="msg" id="vInfo"></p>
+<label class="msg" for="vCode">Verification code</label><input type="text" id="vCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+<button class="btn sun" id="vGo">Verify</button><button class="btn out" id="vResend" style="margin-top:10px">Send a new code</button><p class="msg" id="vMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
+<section class="screen" id="login"><h2>Welcome back</h2><div class="card">
+<label class="msg" for="lgEmail">Email</label><input type="email" id="lgEmail" autocomplete="email" inputmode="email">
+<label class="msg" for="lgPass">Password</label><input type="password" id="lgPass" autocomplete="current-password">
+<button class="btn" id="lgGo">Log in</button><button class="btn out" id="toReset" style="margin-top:10px">Forgot password</button>
+<p class="msg" style="margin-top:12px">Scan-to-log-in with your student ID is coming in a later update.</p><p class="msg" id="lgMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
+<section class="screen" id="reset"><h2>Reset password</h2><div class="card">
+<label class="msg" for="rsEmail">Email</label><input type="email" id="rsEmail" autocomplete="email" inputmode="email"><button class="btn out" id="rsSend">Email me a code</button>
+<label class="msg" for="rsCode" style="display:block;margin-top:12px">Code from the email</label><input type="text" id="rsCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+<label class="msg" for="rsPass">New password (8+ characters)</label><input type="password" id="rsPass" autocomplete="new-password">
+<button class="btn sun" id="rsGo">Set new password</button><p class="msg" id="rsMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
 
 <section class="screen" id="app">
  <div class="top"><div class="av" id="hAv"></div><div><b id="hName"></b><small id="hLv"></small></div><div class="pts" aria-label="Points"><span class="coin">★</span><span id="hPts">0</span></div></div>
@@ -50,7 +64,7 @@
   <button class="btn out sm" id="avBtn" style="margin-top:12px">Change photo</button><input type="file" id="avFile" accept="image/*" hidden>
   <input type="text" id="pName" maxlength="20" aria-label="Username"><button class="btn" id="saveName">Save username</button>
   <div class="grid3" style="margin-top:16px"><div><b id="mItems">0</b><span>Items</span></div><div><b id="mStreak">0</b><span>Streak</span></div><div><b id="mPts">0</b><span>Points</span></div></div></div>
-  <div><div class="card"><div class="row"><span>Student ID</span><b id="mId"></b></div><button class="btn out" id="relink" style="margin-top:10px">Link / change ID</button>
+  <div><div class="card"><div class="row"><span>Email</span><b id="mEmail" style="font-size:13px;word-break:break-all"></b></div><div class="row"><span>Student ID</span><b id="mId"></b></div><div class="stack" style="margin-top:10px"><button class="btn out" id="relink">Link / change ID</button><button class="btn out" id="unlink">Unlink ID</button><button class="btn out" id="chPw">Change password</button></div>
    <div class="row" style="margin-top:6px"><span>Dark mode</span><button class="sw" id="swTheme" role="switch" aria-label="Dark mode"></button></div>
    <div class="row"><span>Sound effects</span><button class="sw on" id="swSound" role="switch" aria-label="Sound effects"></button></div></div>
    <h2>Achievements</h2><div class="rowh" id="badges2"></div><button class="btn out" id="logout" style="margin-top:16px">Log out</button></div></div></div>
@@ -66,6 +80,7 @@
  <label class="msg" for="sid" style="display:block;margin-top:12px">Or upload a barcode photo, or type the number</label><input type="text" id="sid" inputmode="numeric">
  <div class="stack"><button class="btn out" id="upBtn">Upload barcode photo</button><button class="btn sun" id="useId">Use this ID</button><button class="btn out" data-close>Cancel</button></div>
  <input type="file" id="bcFile" accept="image/*" hidden><p class="msg" id="loginMsg" role="status"></p></div></div>
+<div class="modal" id="mPw" role="dialog" aria-modal="true"><div class="sheet"><h3>Change password</h3><label class="msg" for="newPw">New password (8+ characters)</label><input type="password" id="newPw" autocomplete="new-password"><button class="btn sun" id="pwGo">Save password</button><button class="btn out" data-close style="margin-top:10px">Cancel</button><p class="msg" id="pwMsg" role="status"></p></div></div>
 <div class="modal" id="mInfo" role="dialog" aria-modal="true"><div class="sheet"><div id="iArt" style="width:96px;height:96px"></div><h3 id="iT" style="font-size:22px"></h3><p class="msg" id="iBin" style="font-weight:600"></p><p id="iD" style="margin:10px 0"></p><p class="msg" id="iEx"></p><button class="btn" data-close style="margin-top:14px">Got it</button></div></div>
 <div class="modal" id="mGen" role="dialog" aria-modal="true"><div class="sheet" style="text-align:center"><div id="gMas" style="display:grid;place-items:center"></div><h3 id="gT" style="font-size:24px"></h3><p class="msg" id="gD"></p><button class="btn sun" data-close style="margin-top:14px">Awesome</button></div></div>
 <div class="modal" id="mHist" role="dialog" aria-modal="true"><div class="sheet"><h3>Recycling history</h3><div id="histBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
@@ -73,5 +88,5 @@
  <p class="msg">This only happens the first time. The AI model downloads once (about 90 MB), then scanning is instant and works offline. Please keep this page open.</p>
  <div class="bar"><i id="bootBar"></i></div><p class="msg" id="bootTxt">Starting…</p></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="js/app.js"></script><script src="js/ai-barcode.js"></script>
+<script defer src="js/config.js"></script><script defer src="js/app.js"></script><script defer src="js/ai-barcode.js"></script>
 </body></html>

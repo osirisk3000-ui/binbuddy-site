@@ -15,20 +15,13 @@ Camera needs https or localhost: `python3 -m http.server 8000` in this folder, o
 3. Settings > Pages > Deploy from branch > `main` / root. 4. Open `https://USER.github.io/REPO/`.
 After updating files, bump `V` in `sw.js` so phones fetch the new version.
 
-## Works now (built, not yet tested on real devices)
-On-device AI scan, in-app camera, barcode ID linking, points/levels/streaks, history, daily/weekly challenges (tracked from real scans), badges, profile photo/username, dark mode, sound, mobile bottom nav + desktop sidebar, PWA install/offline shell.
+## v6: connected to Supabase
+Accounts (email + password + 6-digit email code), profiles, avatars, points, streaks, history, weekly/monthly/all-time leaderboards and campus stats now live in Supabase. Points are awarded only by the server function `record_scan`. Only theme and sound are stored on the device.
+Setup: see `supabase/SETUP.md` (run `schema.sql`, then `schema_patch_1.sql`). `js/config.js` holds the public project URL and publishable key.
+Run locally: `python3 -m http.server 8000` in this folder. Deploy: upload everything to a GitHub Pages repo root; bump `V` in `sw.js` after changes.
 
-## Sample/placeholder (clearly labeled in the UI)
-Bin locations and fill levels, the other students on the leaderboard, reward catalog (not redeemable).
+## Tested vs not tested
+Tested in headless Chromium against a MOCK of Supabase (signup, code, login, scans, rate limit, history, leaderboard, profile edits, logout). NOT tested against the real Supabase project, on real phones, or the AI/barcode scanners.
 
-## Not built yet
-Email sign-up + codes, passwords, cross-device accounts, real leaderboards, server-side points checks, real bin data/map, smart-bin integration, reward redemption, bonus points for challenges. See `docs/V4_BACKEND.md`.
-
-## v5 changes (stabilization only; no new backend yet)
-- Service worker: no longer caches error responses; only falls back to the app shell for page navigations (v4 returned HTML for failed scripts). Cache is `binbuddy-v5`.
-- AI and rules separated: `ITEMS` (ai-barcode.js) only maps model labels to item names; `RULES` (app.js) decides material, points, tip. Removed the broken Ollama path.
-- New **Metal** material so aluminum cans are no longer labeled Plastic.
-- Barcode: crop keeps its aspect ratio (v4 stretched it); the ID camera can't be started twice.
-- Extra "not trash" reject labels (laptop/electronics, room/furniture, plant/pet). Effect on accuracy is NOT measured yet.
-- Usernames/history are HTML-escaped; lapsed streaks reset on display; stale scan result cleared when leaving the Scan tab; accessibility fixes (aria-checked, dialog roles, Esc to close).
-- Still true: accounts/points are local and can be tampered with. Fixed only by the Supabase milestone.
+## Still sample/not built
+Bin locations and fill levels (sample), reward redemption, challenge bonus points, scan-to-log-in with a student ID, real campus bin data, smart-bin integration. Earlier local-only accounts from v4/v5 are not migrated.

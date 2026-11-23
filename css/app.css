@@ -14,7 +14,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-of
 .btn.sun{background:var(--sun);color:#3a2a00;box-shadow:0 5px 0 #c98f00}.btn.sun:active{box-shadow:0 1px 0 #c98f00}
 .btn.out{background:transparent;color:var(--pri);box-shadow:none;border:2px solid var(--pri)}
 .btn.sm{width:auto;padding:9px 16px;font-size:14px}
-input[type=text]{width:100%;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--bg);color:var(--ink);margin:8px 0}
+input[type=text],input[type=email],input[type=password]{width:100%;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--bg);color:var(--ink);margin:8px 0}
 .msg{font-size:13px;color:var(--mute);margin-top:6px}.stack{display:grid;gap:10px}
 .screen{display:none}.screen.on{display:block}
 svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
