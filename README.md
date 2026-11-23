@@ -33,3 +33,9 @@ Not tested on real phones or against your real Supabase project.
 
 ## v9 changes
 Base map is now OpenFreeMap (free, no key) rendered by MapLibre under our canvas; Overpass is only a fallback. Walking route is joined to your dot and the bin so it no longer looks offset. Service worker cache bumped to `binbuddy-v9`.
+
+## v10 changes
+Map style picker (Auto, Liberty, Bright, Positron, Dark, Fiord; choice saved on the device) and a search box above the map. Search matches bin names first, then places via OpenStreetMap Nominatim (free, no key, runs only when Search is pressed, about 1 request per second). Service worker cache is now `binbuddy-v10`.
+
+## v11 changes
+Search suggestions now appear as you type (3+ letters, 350 ms pause) using Photon (photon.komoot.io, free, no key). Pressing Search/Enter uses Photon and falls back to Nominatim if Photon is down. Your own bins are matched by name first. Service worker cache is now `binbuddy-v11`.

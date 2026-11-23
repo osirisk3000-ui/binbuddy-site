@@ -23,7 +23,9 @@ function resize(){const r=wrap.getBoundingClientRect();if(!r.width)return;dpr=Ma
 new ResizeObserver(resize).observe(wrap);
 /* ---- base map: MapLibre + OpenFreeMap, kept in lockstep with our canvas camera ---- */
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t==='dark'||(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)};
-const styleUrl=()=>'https://tiles.openfreemap.org/styles/'+(isDark()?'dark':'liberty');
+const STYLES=[['auto','Auto (follows theme)'],['liberty','Liberty'],['bright','Bright'],['positron','Positron (light, minimal)'],['dark','Dark'],['fiord','Fiord']];
+let pick=(()=>{const v=store.get('bb3:mapstyle');return STYLES.some(x=>x[0]===v)?v:'auto'})(),found=null;
+const styleUrl=()=>'https://tiles.openfreemap.org/styles/'+(pick==='auto'?(isDark()?'dark':'liberty'):pick);
 const glZoom=()=>Math.log2(40075016.686*Math.cos(C.lat*Math.PI/180)/(512*C.mpp));
 function initBase(){if(gl||glErr||!hasView||!W)return;
  if(!window.maplibregl){if(!initBase.t)initBase.t=setTimeout(()=>{initBase.t=0;if(!window.maplibregl){glErr=true;tilesSoon();kick()}else initBase()},4000);return}
@@ -78,6 +80,7 @@ function draw(t){t=t||0;g.setTransform(dpr,0,0,dpr,0,0);if(gl)g.clearRect(0,0,W,
  if(me){const[x,y]=toS(me.lat,me.lng),ar=me.acc/C.mpp;if(ar>10){g.fillStyle='#3b82f622';g.strokeStyle='#3b82f655';g.lineWidth=1;g.beginPath();g.arc(x,y,ar,0,7);g.fill();g.stroke()}
   const p=(t/1400)%1;g.strokeStyle='rgba(59,130,246,'+(.5*(1-p)).toFixed(2)+')';g.lineWidth=3;g.beginPath();g.arc(x,y,9+p*16,0,7);g.stroke();
   g.fillStyle='#fff';g.beginPath();g.arc(x,y,9,0,7);g.fill();g.fillStyle='#3b82f6';g.beginPath();g.arc(x,y,6.5,0,7);g.fill()}
+ if(found){const[fx,fy]=toS(found.lat,found.lng);pinShape(fx,fy,'#6d4aff',1,'•')}
  const L=vis().map(b=>({b,p:toS(b.lat,b.lng)})).filter(o=>o.p[0]>-30&&o.p[0]<W+30&&o.p[1]>-10&&o.p[1]<H+50).sort((a,c)=>a.p[1]-c.p[1]);
  let top=null;for(const o of L){if(o.b.id===sel){top=o;continue}pinShape(o.p[0],o.p[1],BINCOL[o.b.t],1,LET[o.b.t])}
  if(top){const[x,y]=top.p,p=(t/900)%1;g.strokeStyle='rgba(23,165,116,'+(.55*(1-p)).toFixed(2)+')';g.lineWidth=3;g.beginPath();g.ellipse(x,y,6+p*16,3+p*8,0,0,7);g.stroke();pinShape(x,y,BINCOL[top.b.t],1.3,LET[top.b.t])}
@@ -197,6 +200,40 @@ $('binSave').onclick=async()=>{if(!pend||saving)return;saving=true;$('binMsg').t
   const{data,error}=await sb.rpc('add_bin',{p_name:n,p_category:t,p_lat:pend.lat,p_lng:pend.lng});if(error)throw error;
   closeAll();toast('Bin added. Thanks for mapping it!');SFX.ok();pend=null;await loadBins();if(data&&data.id)select(data.id,false)}
  catch(e){$('binMsg').textContent=binErr(e);SFX.bad()}finally{saving=false}};
+/* ---- map style picker ---- */
+function renderStyleMenu(){const m=$('styleMenu');m.innerHTML=STYLES.map(([k,n])=>`<button data-k="${k}" class="${k===pick?'on':''}">${n}</button>`).join('');
+ m.querySelectorAll('button').forEach(b=>b.onclick=()=>{pick=b.dataset.k;store.set('bb3:mapstyle',pick);m.hidden=true;renderStyleMenu();glKey='';kick()})}
+$('mapStyleBtn').onclick=()=>{const m=$('styleMenu');m.hidden=!m.hidden;if(!m.hidden)renderStyleMenu()};
+/* ---- search: your bins by name first, then places. Suggestions appear as you type (Photon, a free OpenStreetMap geocoder, no key);
+   if Photon is down, pressing Search falls back to OpenStreetMap Nominatim. ---- */
+let srSeq=0,srTmr=0,srCtl=null,lastNom=0;
+function goTo(lat,lng,name){found={lat,lng,name};$('srRes').hidden=true;$('srClear').hidden=false;msg(name?'Showing: '+name:'');fly(lat,lng,Math.min(C.mpp,1.2),600);kick()}
+$('srClear').onclick=()=>{srSeq++;found=null;$('srRes').hidden=true;$('srClear').hidden=true;$('srQ').value='';msg('');kick()};
+const photonPlace=f=>{const p=f.properties||{},c=f.geometry&&f.geometry.coordinates;if(!c)return null;
+ const st=[p.street&&(p.housenumber?p.housenumber+' ':'')+p.street,p.city||p.town||p.village||p.district,p.state,p.country].filter(x=>x&&x!==p.name);
+ return{name:p.name||st[0]||'Place',sub:st.join(', '),lat:c[1],lng:c[0]}};
+async function getJson(url,ms){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),ms||8000);if(srCtl)srCtl.abort();srCtl=ctl;
+ try{const r=await fetch(url,{signal:ctl.signal});if(!r.ok)throw new Error('http');return await r.json()}finally{clearTimeout(to)}}
+async function findPlaces(q,allowFallback){
+ const bias=hasView?`&lat=${C.lat.toFixed(5)}&lon=${C.lng.toFixed(5)}`:'';
+ try{const j=await getJson('https://photon.komoot.io/api/?limit=6&lang=en&q='+encodeURIComponent(q)+bias);return(j.features||[]).map(photonPlace).filter(Boolean)}
+ catch(e){if(e.name==='AbortError'&&srCtl&&srCtl.signal.aborted&&!allowFallback)throw e;if(!allowFallback)throw e}
+ const wait=1100-(Date.now()-lastNom);if(wait>0)await new Promise(r=>setTimeout(r,wait));lastNom=Date.now();
+ const vb=hasView?`&viewbox=${(C.lng-.3).toFixed(4)},${(C.lat+.3).toFixed(4)},${(C.lng+.3).toFixed(4)},${(C.lat-.3).toFixed(4)}`:'';
+ const j=await getJson('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q='+encodeURIComponent(q)+vb,10000);
+ return j.map(p=>({name:p.name||p.display_name.split(',')[0],sub:p.display_name,lat:+p.lat,lng:+p.lon}))}
+async function doSearch(auto){const q=$('srQ').value.trim();const box=$('srRes');if(q.length<(auto?3:2)){if(auto)box.hidden=true;return}
+ const my=++srSeq,local=bins.filter(b=>b.n&&b.n.toLowerCase().includes(q.toLowerCase())).slice(0,3);let places=[],note='';
+ const row=(i,t,sub)=>`<button data-i="${i}"><b>${esc(t)}</b><small>${esc(sub)}</small></button>`;
+ const paint=()=>{box.hidden=false;box.innerHTML=local.map((b,i)=>row('b'+i,b.n,b.t+' bin')).join('')+places.map((p,i)=>row('p'+i,p.name,p.sub)).join('')+(note?`<p class="msg" style="margin:6px 10px">${note}</p>`:'');
+  box.querySelectorAll('button').forEach(el=>el.onclick=()=>{const k=el.dataset.i,n=+k.slice(1);if(k[0]==='b'){box.hidden=true;select(local[n].id,true)}else goTo(places[n].lat,places[n].lng,places[n].name)})};
+ note='Searching places…';paint();
+ try{places=await findPlaces(q,!auto);if(my!==srSeq)return;note=!places.length&&!local.length?'No matches. Try a building name, street or city.':''}
+ catch(e){if(my!==srSeq)return;note=auto?'':'Couldn’t search places right now. Try again in a moment.'}
+ paint()}
+$('srGo').onclick=()=>{clearTimeout(srTmr);doSearch(false)};
+$('srQ').addEventListener('input',()=>{clearTimeout(srTmr);const v=$('srQ').value.trim();if(v.length<3){srSeq++;$('srRes').hidden=true;return}srTmr=setTimeout(()=>doSearch(true),350)});
+$('srQ').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(srTmr);doSearch(false)}});
 /* ---- buttons + lifecycle ---- */
 $('nearBtn').onclick=async()=>{if(!me){const m=await locate(false);if(!m)return}const L=vis();if(!L.length){msg('No bins of that type yet.');return}msg('');
  const n=L.reduce((a,b)=>dist(me.lat,me.lng,b.lat,b.lng)<dist(me.lat,me.lng,a.lat,a.lng)?b:a);select(n.id,false);walkTo(n)};
