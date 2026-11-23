@@ -27,5 +27,5 @@ Tested in headless Chromium against a MOCK of Supabase (signup, code, login, sca
 Bin locations and fill levels (sample), reward redemption, challenge bonus points, scan-to-log-in with a student ID, real campus bin data, smart-bin integration. Earlier local-only accounts from v4/v5 are not migrated.
 
 ## v7 changes
-Fun-fact card you swipe away, camera-only scanning (upload removed), own canvas bin map with user-added bins (`js/map.js`, no map provider), leaderboard opens first with gold/silver/bronze medals and round avatars, profile photo upload fix, log in with student ID (Edge Function), add-to-home-screen tutorial. Run `supabase/schema_patch_2.sql`; see SETUP.md "Milestone 3". Service worker cache is now `binbuddy-v7`.
+Fun-fact card you swipe away, camera-only scanning (upload removed), own canvas bin map with user-added bins (`js/map.js`, no map provider), leaderboard opens first with gold/silver/bronze medals and round avatars, profile photo upload fix, log in with student ID (Edge Function), add-to-home-screen tutorial. Run `supabase/schema_patch_2.sql`; see SETUP.md "Milestone 3". Service worker cache is now `binbuddy-v8`. v8 adds OpenStreetMap buildings/roads and walking directions to the map (see SETUP.md).
 Not tested on real phones or against your real Supabase project.

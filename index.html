@@ -63,8 +63,10 @@
     <div class="mapscale" id="mapScale"><span id="scTxt"></span><i id="scBar"></i></div>
     <div class="cross" id="crossPin" hidden><svg viewBox="0 0 40 52"><ellipse cx="20" cy="49" rx="8" ry="2.5" fill="#0004"/><path d="M20 48C14 40 4 33 4 20a16 16 0 0132 0c0 13-10 20-16 28z" fill="#ffc533" stroke="#fff" stroke-width="3"/><circle cx="20" cy="20" r="6" fill="#3a2a00"/></svg></div>
     <div class="maphint" id="mapHint"><div><p style="font-weight:600;margin-top:8px">Find where you are to get started</p><p class="msg">We only use your location to center the map and place bins.</p><button class="btn sm" id="hintLoc" style="margin-top:10px">Use my location</button></div></div>
+    <div class="mapstat" id="mapStat" hidden role="status"></div><div class="attr">© OpenStreetMap contributors</div>
     <div class="mapinfo" id="mapInfo" hidden></div>
     <div class="placebar" id="placeBar" hidden><p id="placeTxt">Drag the map so the pin sits on the bin.</p><div class="stack two"><button class="btn sun sm" id="placeOk" style="width:100%">Place pin here</button><button class="btn out sm" id="placeNo" style="width:100%">Cancel</button></div></div></div>
+   <button class="btn sun" id="nearBtn" style="margin-top:12px">Walk to the nearest bin</button>
    <div class="stack two" id="addBtns" style="margin-top:12px"><button class="btn" id="binHere">Add bin where I’m standing</button><button class="btn out" id="binDrop">Drop a pin on the map</button></div>
    <p class="msg" id="mapMsg" role="status"></p></div>
   <div class="card" id="binList"></div></div></div>

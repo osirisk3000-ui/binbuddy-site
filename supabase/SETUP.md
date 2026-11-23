@@ -51,3 +51,9 @@ Only the **Project URL** and the **anon (public) key** (Project Settings > API).
    - Until it is deployed, the "Log in with student ID" button shows "ID login isn't available right now" and everything else keeps working.
    - Security: the ID alone never logs anyone in. A one-time code is emailed to the account that owns the ID. The function answers the same way for IDs that do not exist.
 4. Camera-only scanning is enforced in the app (no upload button). A determined person can still bypass the browser, which is why the server caps (5 s gap, 40 scans a day) stay.
+
+## v8: real map details + walking directions (no setup needed)
+- Buildings, roads, paths, parks and water come from OpenStreetMap through the free Overpass API (two public servers, tried in order). Tiles are cached on each device for 14 days, so repeat visits are fast.
+- Walking routes come from routing.openstreetmap.de (foot profile). "Open in Maps" hands off to Apple Maps (iPhone) or Google Maps (everything else) in walking mode.
+- All of these are free, community-run services with fair-use limits. If a big class loads the map at once and it gets slow or errors, the next step is a keyed provider (e.g. MapTiler, Stadia or openrouteservice, free tiers) or hosting your own data. Only map-area coordinates and, when someone taps "Walk there", their start and end points are sent.
+- Credit "© OpenStreetMap contributors" is shown on the map (required by OSM's license).
