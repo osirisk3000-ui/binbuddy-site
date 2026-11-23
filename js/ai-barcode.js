@@ -58,10 +58,18 @@ const MIN_SCORE=0.3;
 let clf=null;
 async function analyze(b){
   if(!clf){bootShow();
-    const T=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
-    const dev=navigator.gpu?"webgpu":"wasm";
-    try{clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{progress_callback:onProg,device:dev,dtype:dev==="webgpu"?"fp32":"q8"})}
-    catch(e){clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{progress_callback:onProg,device:"wasm",dtype:"q8"})}
+    // If the page was killed during the last load (phone ran out of memory), say so instead of silently looping.
+    const crashed=!!localStorage.getItem('bb3:aiLoading');
+    $('bootTxt').textContent=crashed?"Last try was interrupted. Close other tabs and apps, then keep this page open.":"Starting…";
+    localStorage.setItem('bb3:aiLoading','1');
+    try{
+      const T=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1");
+      // v7.1: always the small 8-bit model on the CPU/WASM backend (~90 MB). The old WebGPU path downloaded the full-size
+      // 32-bit model (several hundred MB) and phones ran out of memory right at 99%, which reloaded the page.
+      try{T.env.backends.onnx.wasm.numThreads=1;T.env.backends.onnx.wasm.proxy=false}catch(e){}
+      clf=await T.pipeline("zero-shot-image-classification","Xenova/clip-vit-base-patch32",{progress_callback:onProg,device:"wasm",dtype:"q8"});
+      localStorage.removeItem('bb3:aiLoading');
+    }catch(e){bootHide();localStorage.removeItem('bb3:aiLoading');const er=new Error("ai_load");er.aiLoad=true;throw er}
     bootHide()}
   const url=URL.createObjectURL(b);let out;
   try{out=await clf(url,ITEMS.map(i=>i[0]),{hypothesis_template:"a photo of {}."})}finally{URL.revokeObjectURL(url)}

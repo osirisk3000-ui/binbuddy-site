@@ -1,4 +1,4 @@
-const V="binbuddy-v7",SHELL=["./","index.html","css/app.css","js/app.js","js/map.js","js/ai-barcode.js","js/config.js","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/favicon.png","icons/apple-touch-icon.png"];
+const V="binbuddy-v7-1",SHELL=["./","index.html","css/app.css","js/app.js","js/map.js","js/ai-barcode.js","js/config.js","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png","icons/favicon.png","icons/apple-touch-icon.png"];
 const okHost=u=>u.origin===location.origin||/(^|\.)(jsdelivr\.net|gstatic\.com|googleapis\.com)$/.test(u.hostname);
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))));self.clients.claim()});

@@ -212,7 +212,7 @@ async function handle(f){cur=null;$('res').style.display='none';$('scanMsg').tex
   cur={item:r.item,m,pts:Math.max(1,Math.min(60,rule[1])),tip:rule[2]};camSet('shot');
   $('rName').textContent=cur.item;$('rTip').textContent=cur.tip;$('rPts').textContent="+"+cur.pts;$('rMat').textContent=m;$('rBin').textContent=bin;$('rBinIcon').innerHTML=binSvg(BINCOL[bin]);
   $('rFi').innerHTML=mascot(40);$('rFact').textContent="Did you know? "+FACTS[m];$('res').style.display='block';SFX.ok()
- }catch(err){bootHide();camSet('');$('prev').classList.remove('on');$('scanMsg').textContent="Couldn't identify that. Move closer, center one item, use good light, and try again.";SFX.bad()}}
+ }catch(err){bootHide();camSet('');$('prev').classList.remove('on');$('scanMsg').textContent=err&&err.aiLoad?"The AI couldn’t finish loading. Check your connection, close other tabs, and try again.":"Couldn't identify that. Move closer, center one item, use good light, and try again.";SFX.bad()}}
 let adding=false;
 $('addBin').onclick=async()=>{if(!cur||adding)return;adding=true;const c=cur;
  try{const {data,error}=await sb.rpc('record_scan',{p_item_key:slug(c.item)});if(error)throw error;
