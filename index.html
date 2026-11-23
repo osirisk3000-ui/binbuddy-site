@@ -6,7 +6,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
-<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
 <title>BinBuddy</title></head><body><main>
 <section class="screen on" id="welcome"><div class="hero"><div id="wMascot"></div><h1>BinBuddy</h1><p>Snap your trash. Find the right bin. Earn points.</p>
 <div class="stack"><button class="btn" id="toSign">Sign up</button><button class="btn out" id="toLog">Log in</button></div></div></section>
@@ -61,14 +61,14 @@
   <button data-v="me" aria-label="Profile"><span id="n5"></span><span class="nb">Profile</span></button></nav>
 </section></main>
 
-<div class="modal" id="mScan"><div class="sheet"><h3>Scan your student ID</h3><video id="cam" playsinline muted></video>
+<div class="modal" id="mScan" role="dialog" aria-modal="true"><div class="sheet"><h3>Scan your student ID</h3><video id="cam" playsinline muted></video>
  <button class="btn" id="scanBtn" style="margin-top:10px">Start camera</button>
  <label class="msg" for="sid" style="display:block;margin-top:12px">Or upload a barcode photo, or type the number</label><input type="text" id="sid" inputmode="numeric">
  <div class="stack"><button class="btn out" id="upBtn">Upload barcode photo</button><button class="btn sun" id="useId">Use this ID</button><button class="btn out" data-close>Cancel</button></div>
  <input type="file" id="bcFile" accept="image/*" hidden><p class="msg" id="loginMsg" role="status"></p></div></div>
-<div class="modal" id="mInfo"><div class="sheet"><div id="iArt" style="width:96px;height:96px"></div><h3 id="iT" style="font-size:22px"></h3><p class="msg" id="iBin" style="font-weight:600"></p><p id="iD" style="margin:10px 0"></p><p class="msg" id="iEx"></p><button class="btn" data-close style="margin-top:14px">Got it</button></div></div>
-<div class="modal" id="mGen"><div class="sheet" style="text-align:center"><div id="gMas" style="display:grid;place-items:center"></div><h3 id="gT" style="font-size:24px"></h3><p class="msg" id="gD"></p><button class="btn sun" data-close style="margin-top:14px">Awesome</button></div></div>
-<div class="modal" id="mHist"><div class="sheet"><h3>Recycling history</h3><div id="histBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
+<div class="modal" id="mInfo" role="dialog" aria-modal="true"><div class="sheet"><div id="iArt" style="width:96px;height:96px"></div><h3 id="iT" style="font-size:22px"></h3><p class="msg" id="iBin" style="font-weight:600"></p><p id="iD" style="margin:10px 0"></p><p class="msg" id="iEx"></p><button class="btn" data-close style="margin-top:14px">Got it</button></div></div>
+<div class="modal" id="mGen" role="dialog" aria-modal="true"><div class="sheet" style="text-align:center"><div id="gMas" style="display:grid;place-items:center"></div><h3 id="gT" style="font-size:24px"></h3><p class="msg" id="gD"></p><button class="btn sun" data-close style="margin-top:14px">Awesome</button></div></div>
+<div class="modal" id="mHist" role="dialog" aria-modal="true"><div class="sheet"><h3>Recycling history</h3><div id="histBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
 <div id="boot" role="alertdialog" aria-live="polite"><div style="max-width:340px"><div id="bMas" style="display:grid;place-items:center"></div><h2 style="justify-content:center">Setting up your on-device AI</h2>
  <p class="msg">This only happens the first time. The AI model downloads once (about 90 MB), then scanning is instant and works offline. Please keep this page open.</p>
  <div class="bar"><i id="bootBar"></i></div><p class="msg" id="bootTxt">Starting…</p></div></div>

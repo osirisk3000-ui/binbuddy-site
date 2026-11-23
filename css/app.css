@@ -89,7 +89,7 @@ nav .nb{display:none}nav button{position:relative;z-index:1;background:transpare
  nav button{width:100%;height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;justify-content:flex-start}nav .nb{display:inline;font-weight:600}
  nav button:hover{background:var(--line)}nav button[aria-current=true]{background:var(--pri)}.pill{display:none}
  .bento{grid-template-columns:repeat(2,1fr)}.bento .span2{grid-column:span 2}
- .mats{grid-template-columns:repeat(5,1fr)}.stats{grid-template-columns:repeat(4,1fr)}
+ .mats{grid-template-columns:repeat(6,1fr)}.stats{grid-template-columns:repeat(4,1fr)}
  .modal{align-items:center}.sheet{border-radius:28px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
