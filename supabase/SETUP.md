@@ -44,7 +44,7 @@ Only the **Project URL** and the **anon (public) key** (Project Settings > API).
 
 ## Milestone 3 additions (v7 site)
 1. **Run `schema_patch_2.sql`** once in the SQL Editor. It adds user-added bin locations (`add_bin`, `delete_my_bin`) and the storage read policy that profile photo uploads needed. Without it the map shows an error and profile photos may fail.
-2. **Bin locations.** Any signed-in user can add a bin (max 15 per day, duplicates within about 4 m rejected) and delete their own. You can also add or remove any bin yourself in Table Editor > `bins` (set `name`, `category` = Recycling / Compost / Trash, `lat`, `lng`). Tip: in Google Maps long-press a spot to copy its coordinates.
+2. **Bin locations.** Any signed-in user can add a bin (no daily limit; duplicates within about 4 m rejected. If you ran an older schema_patch_2.sql, also run schema_patch_3.sql to remove the old 15-per-day cap) and delete their own. You can also add or remove any bin yourself in Table Editor > `bins` (set `name`, `category` = Recycling / Compost / Trash, `lat`, `lng`). Tip: in Google Maps long-press a spot to copy its coordinates.
 3. **Log in with student ID (optional, needs one deploy).**
    - Authentication > Email Templates > **Magic Link**: put `{{ .Token }}` in the body (e.g. "Your BinBuddy login code is {{ .Token }}").
    - Dashboard > Edge Functions > Deploy a new function named exactly `id-login`, paste `supabase/functions/id-login/index.ts`, and turn **Verify JWT OFF**. (CLI: `supabase functions deploy id-login --no-verify-jwt`.)
