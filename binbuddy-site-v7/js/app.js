@@ -1,4 +1,4 @@
-/* BinBuddy v6: app logic. Accounts, points, history and leaderboards live in Supabase (see supabase/schema.sql). Only theme/sound are stored locally. */
+/* BinBuddy v7 (v6 + camera-only scans, own map, swipe fact card, ID login, install tips): app logic. Accounts, points, history and leaderboards live in Supabase (see supabase/schema.sql). Only theme/sound are stored locally. */
 const $=id=>document.getElementById(id);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const P={home:"M3 11l9-8 9 8M5 10v10h14V10",scan:"M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3M8 12h8",pin:"M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11zM12 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3",cup:"M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM7 6H4v1a3 3 0 003 3M17 6h3v1a3 3 0 01-3 3",user:"M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c1-4 4-6 8-6s7 2 8 6",flame:"M12 3c1 4 5 5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z",leaf:"M5 19c0-9 5-14 15-14 0 10-5 15-14 15M5 19l8-8",star:"M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z",clock:"M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z",check:"M5 12l5 5 9-10",gift:"M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2-4-5-3-4-1s4 1 4 1zm0 0c2-4 5-3 4-1s-4 1-4 1z",bolt:"M13 3L5 14h6l-1 7 8-11h-6z",globe:"M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"};
@@ -25,8 +25,6 @@ const RULES={"Snack wrapper":["Landfill",5,"Wrappers are too thin to recycle. Tr
 const BINCOL={Recycling:"#3b82f6",Compost:"#22a35a",Trash:"#5b6573"};
 const FACTS={Plastic:"Only about 9% of all plastic ever made has been recycled worldwide.",Glass:"Glass can be recycled over and over without losing quality.",Paper:"Roughly two-thirds of paper used in the US gets recycled.",Compost:"Food scraps are the largest single material in US landfills.",Landfill:"The average American generates about 4.9 pounds of trash every day.",Metal:"Recycling an aluminum can uses about 95% less energy than making a new one."};
 const binSvg=c=>`<svg class="bin" viewBox="0 0 64 64"><rect x="10" y="12" width="44" height="8" rx="3" fill="${c}" opacity=".75"/><rect x="26" y="7" width="12" height="6" rx="2" fill="${c}"/><path d="M14 24h36l-3 32a3 3 0 01-3 3H20a3 3 0 01-3-3z" fill="${c}"/><path d="M26 31v21M32 31v21M38 31v21" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/></svg>`;
-/* SAMPLE data: replace with real data from the database in v4 */
-const BINS=[{n:"Sample Bin A",t:"Recycling",f:35,d:"120 m",x:22,y:38},{n:"Sample Bin B",t:"Compost",f:72,d:"250 m",x:58,y:28},{n:"Sample Bin C",t:"Trash",f:91,d:"400 m",x:45,y:66},{n:"Sample Bin D",t:"Recycling",f:58,d:"600 m",x:78,y:62},{n:"Sample Bin E",t:"Compost",f:20,d:"750 m",x:18,y:78}];
 const RW=[["Free coffee",300],["BinBuddy tote bag",600],["Campus store credit",1000],["Priority parking day",1500]];
 const BADGES=[{n:"First Toss",i:"leaf",p:s=>[s.items,1]},{n:"3-Day Streak",i:"flame",p:s=>[s.streak,3]},{n:"10 Items",i:"star",p:s=>[s.items,10]},{n:"500 Points",i:"cup",p:s=>[s.pts,500]}];
 const wk=()=>{const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toDateString()};
@@ -35,14 +33,14 @@ function roll(){const t=new Date().toDateString(),w=wk();
 if(!S.dly||S.dly.d!==t)S.dly={d:t,scans:0,cans:0};if(!S.wkl||S.wkl.w!==w)S.wkl={w,plastic:0}}
 const CH=[{t:"Complete 3 scans today",k:"Daily",i:"scan",p:()=>[S.dly.scans,3]},{t:"Recycle an aluminum can",k:"Daily",i:"bolt",p:()=>[S.dly.cans,1]},{t:"Recycle five plastic items",k:"Weekly",i:"globe",p:()=>[S.wkl.plastic,5]},{t:"Keep a 3-day streak",k:"Weekly",i:"flame",p:()=>[S.streak,3]}];
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let sb=null,S=null,cur=null,onId=null,playTab='ch',binF='All';
+let sb=null,S=null,cur=null,onId=null,playTab='lb';
 /* ---------- sound ---------- */
 let AC=null;
 function tone(f,d,t,g,s,sl){if(store.get('bb3:mute'))return;try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),v=AC.createGain(),n=AC.currentTime+(s||0);o.type=t||'sine';o.frequency.setValueAtTime(f,n);if(sl)o.frequency.exponentialRampToValueAtTime(f*sl,n+d);v.gain.setValueAtTime(g||.05,n);v.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(v);v.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
 const SFX={hover:()=>tone(1300,.04,'sine',.012),click:()=>tone(520,.09,'triangle',.06,0,1.7),nav:()=>tone(380,.2,'sine',.05,0,2.2),ok:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.2,'triangle',.06,i*.08)),bad:()=>tone(200,.28,'sawtooth',.035,0,.6),lvl:()=>[392,523,659,784,1047].forEach((f,i)=>tone(f,.22,'square',.03,i*.09))};
 document.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&e.target.closest&&e.target.matches('button,.mat'))SFX.hover()},true);
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button,.mat');if(b&&!b.closest('nav'))SFX.click()});
-function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2600)}
+let toastT=0;function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),2600)}
 function openGen(t,d,m){$('gMas').innerHTML=mascot(m||120);$('gT').textContent=t;$('gD').textContent=d;$('mGen').classList.add('on')}
 /* ---------- static art ---------- */
 $('wMascot').innerHTML=mascot(150);$('spMascot').innerHTML=mascot(120);$('sMascot').innerHTML=mascot(84);$('sMas').innerHTML=mascot(72);$('bMas').innerHTML=mascot(96);
@@ -52,11 +50,11 @@ function screen(id){document.querySelectorAll('.screen').forEach(e=>e.classList.
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>screen('welcome'));
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeAll());
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAll();dismissFact()}});
 function closeAll(){document.querySelectorAll('.modal').forEach(m=>m.classList.remove('on'));if(typeof stopCam==='function')stopCam()}
 const order=['home','scan','map','play','me'];let curV='home';
 function movePill(btn,first){const p=$('pill'),l=btn.offsetLeft,w=btn.offsetWidth,ol=+(p.dataset.l||l),ow=+(p.dataset.w||w);p.style.transition=first?'none':'';const nl=Math.min(l,ol),nr=Math.max(l+w,ol+ow);p.style.transform=`translateX(${nl}px)`;p.style.width=(nr-nl)+'px';setTimeout(()=>{p.style.transform=`translateX(${l}px)`;p.style.width=w+'px'},first?0:150);p.dataset.l=l;p.dataset.w=w}
-function show(v,first){document.documentElement.style.setProperty('--dir',order.indexOf(v)>=order.indexOf(curV)?1:-1);if(v!=='scan'){camReset();$('res').style.display='none';cur=null}curV=v;
+function show(v,first){document.documentElement.style.setProperty('--dir',order.indexOf(v)>=order.indexOf(curV)?1:-1);if(v!=='scan'){camReset();$('res').style.display='none';cur=null}curV=v;if(window.BBMap){if(v==='map')BBMap.open();else BBMap.close()}if(v==='play'&&!first)setPlay('lb');
   document.querySelectorAll('#app .view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
   document.querySelectorAll('nav button').forEach(b=>{const on=b.dataset.v===v;b.setAttribute('aria-current',on);if(on)movePill(b,first)});if(!first)SFX.nav();window.scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
@@ -97,9 +95,19 @@ $('suGo').onclick=guard($('suGo'),$('suMsg'),async()=>{if(!needSb($('suMsg')))re
  if(data.user&&data.user.identities&&data.user.identities.length===0){$('suMsg').textContent="That email already has an account. Try logging in.";SFX.bad();return}
  if(data.session){await afterAuth();return}
  toVerify(email,pass,'signup')});
+/* log in with a linked student ID: the server emails a one-time code to the account that owns the ID (Edge Function id-login) */
+async function idRequest(id){const r=await sb.functions.invoke('id-login',{body:{action:'request',student_id:id}});if(r.error)throw new Error("ID login isn’t available right now. Use your email and password.")}
+async function idVerify(code){const r=await sb.functions.invoke('id-login',{body:{action:'verify',student_id:pend.sid,code}});
+ if(r.error||!r.data||!r.data.access_token)throw new Error("That code is wrong or expired. Request a new one.");
+ const s=await sb.auth.setSession({access_token:r.data.access_token,refresh_token:r.data.refresh_token});if(s.error)throw s.error;await afterAuth()}
+$('lgId').onclick=()=>{if(!needSb($('lgMsg')))return;openScanner(async v=>{$('lgMsg').textContent="Sending a code…";
+ try{await idRequest(v)}catch(e){$('lgMsg').textContent=e.message;SFX.bad();return}
+ toVerify('', '', 'id',"If that ID is linked to an account, we emailed a code to that account’s email address. Enter it below.");pend.sid=v;$('lgMsg').textContent=''})};
 $('vGo').onclick=guard($('vGo'),$('vMsg'),async()=>{const t=$('vCode').value.trim();if(!/^\d{6,10}$/.test(t)){$('vMsg').textContent="Enter the code from your email.";SFX.bad();return}
+ if(pend.mode==='id'){await idVerify(t);return}
  const {error}=await sb.auth.verifyOtp({email:pend.email,token:t,type:'signup'});if(error)throw error;await afterAuth()});
 $('vResend').onclick=guard($('vResend'),$('vMsg'),async()=>{if(Date.now()<resendAt){$('vMsg').textContent="Wait a few seconds before requesting another code.";return}
+ if(pend.mode==='id'){await idRequest(pend.sid);resendAt=Date.now()+30000;$('vMsg').textContent="If that ID is linked, a new code is on its way.";return}
  const {error}=await sb.auth.resend({type:'signup',email:pend.email});if(error)throw error;resendAt=Date.now()+30000;$('vMsg').textContent="New code sent.";SFX.ok()});
 $('lgGo').onclick=guard($('lgGo'),$('lgMsg'),async()=>{if(!needSb($('lgMsg')))return;
  const email=$('lgEmail').value.trim().toLowerCase(),pass=$('lgPass').value;
@@ -130,7 +138,7 @@ async function loadMe(){
   hist:(d.recent||[]).map(r=>({i:r.item,m:r.material,p:r.points,t:Date.parse(r.t)})),dly:{d:todayStr(),scans:d.today_scans,cans:d.today_cans},wkl:{w:wk(),plastic:d.week_plastic}}}
 async function enter(){
  try{await loadMe()}catch(e){screen('welcome');$('welMsg').textContent="Couldn't load your account. "+authErr(e);return}
- roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true)}
+ roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true);maybeInstallTip()}
 /* ---------- render ---------- */
 const setAv=(e,s)=>{e.style.backgroundImage=s.avatar?`url("${s.avatar}")`:'';e.textContent=s.avatar?'':s.name[0].toUpperCase()};
 const bdg=s=>BADGES.map(b=>{const[a,g]=b.p(s),got=a>=g;return`<div class="badge ${got?'got':''}"><div class="bi">${ic(b.i)}</div><b>${b.n}</b><div class="msg">${got?'Unlocked':Math.min(a,g)+' / '+g}</div></div>`}).join('');
@@ -146,11 +154,10 @@ function render(){roll();const lv=Math.floor(S.pts/100)+1,h=new Date().getHours(
  renderBins();renderPlay();
  $('pName').value=S.name;$('mItems').textContent=S.items;$('mStreak').textContent=S.streak;$('mPts').textContent=S.pts;$('mEmail').textContent=S.email||'';$('mId').textContent=S.id?"Linked ("+S.id+")":"Not linked";
  const dk=document.documentElement.dataset.theme==='dark',snd=!store.get('bb3:mute');$('swTheme').classList.toggle('on',dk);$('swTheme').setAttribute('aria-checked',dk);$('swSound').classList.toggle('on',snd);$('swSound').setAttribute('aria-checked',snd)}
-function renderBins(){const st=f=>f<60?["Available","#17a574"]:f<85?["Almost full","#e0a800"]:["Full","#e5484d"],L=BINS.filter(b=>binF==='All'||b.t===binF);
- $('map').innerHTML=L.map((b,i)=>`<button class="pin" style="left:${b.x}%;top:${b.y}%;background:${BINCOL[b.t]}" aria-label="${b.n}" data-i="${i}"></button>`).join('')+'<span class="msg" style="position:absolute;left:12px;bottom:8px">Sample map. Real map comes with campus data.</span>';
- document.querySelectorAll('.pin').forEach(p=>p.onclick=()=>{const b=L[p.dataset.i];toast(b.n+" · "+b.t+" · "+b.f+"% full")});
- $('binList').innerHTML=L.length?L.map(b=>{const[s,c]=st(b.f);return`<div class="li"><div style="width:38px">${binSvg(BINCOL[b.t]).replace('class="bin"','width="38" height="38"')}</div><div><b>${b.n}</b> <span class="tag">SAMPLE</span><br><small>${b.t} · ${b.d} · <b style="color:${c}">${s}</b></small><div class="fill"><i style="width:${b.f}%;background:${c}"></i></div></div><b>${b.f}%</b></div>`}).join(''):`<div style="text-align:center">${mascot(80)}<p class="msg">No bins of that type yet.</p></div>`}
-document.querySelectorAll('#binSeg button').forEach(b=>b.onclick=()=>{binF=b.dataset.f;document.querySelectorAll('#binSeg button').forEach(x=>x.classList.toggle('on',x===b));renderBins()});
+function renderBins(){window.BBMap&&BBMap.refreshList()}
+const MEDAL={1:["#f5b301","#ffd966","#7a5600"],2:["#aab4c3","#dfe5ee","#4d5666"],3:["#cd7f32","#e8b07a","#6b3a0f"]};
+const medalSvg=r=>{const[a,b,d]=MEDAL[r];return`<svg class="medal" viewBox="0 0 32 32" role="img" aria-label="${['','Gold','Silver','Bronze'][r]} medal"><path d="M8 1h6l3 9-5 3z" fill="${a}" opacity=".75"/><path d="M24 1h-6l-3 9 5 3z" fill="${a}" opacity=".95"/><circle cx="16" cy="21" r="9.5" fill="${a}"/><circle cx="16" cy="21" r="7" fill="${b}"/><path d="M16 15.6l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="${d}"/></svg>`};
+const lbRow=r=>`<div class="li lb ${r.is_me?'me':''} ${r.rank<=3?'m'+r.rank:''}"><div class="rk">${r.rank<=3?medalSvg(r.rank):r.rank}</div><div class="av" style="${r.avatar_url?`background-image:url('${esc(r.avatar_url)}')`:''}">${r.avatar_url?'':esc(r.username[0].toUpperCase())}</div><div class="grow"><b>${esc(r.username)}${r.is_me?' (you)':''}</b></div><b class="pt">${r.points}</b></div>`;
 let lbP='Weekly',lbCache={};
 async function loadLb(){const k=lbP,per={Weekly:'week',Monthly:'month','All time':'all'}[k];try{const [a,b]=await Promise.all([sb.rpc('leaderboard',{p_period:per}),sb.rpc('campus_stats')]);if(a.error)throw a.error;lbCache[k]={rows:a.data,stats:b.error?null:b.data}}catch(e){lbCache[k]={err:true}}if(playTab==='lb'&&lbP===k)renderPlay()}
 function renderPlay(){let h='';
@@ -160,11 +167,12 @@ function renderPlay(){let h='';
   else if(c.err)h=seg+`<div class="card"><p class="msg">Couldn't load the leaderboard. Check your connection.</p></div>`;
   else{const rows=c.rows||[],st=c.stats;
    h=seg+(st?`<p class="msg">This week on campus: <b>${st.items_week}</b> items scanned by <b>${st.students_active_week}</b> students. These count scans, not verified disposals.</p>`:'')+
-   `<div class="card">${rows.length?rows.map(r=>`<div class="li ${r.is_me?'me':''}"><div class="rk">${r.rank}</div><div class="av" style="width:38px;height:38px;font-size:14px;${r.avatar_url?`background-image:url('${esc(r.avatar_url)}')`:''}">${r.avatar_url?'':esc(r.username[0].toUpperCase())}</div><div><b>${esc(r.username)}${r.is_me?' (you)':''}</b></div><b>${r.points}</b></div>`).join(''):`<div style="text-align:center">${mascot(80)}<p class="msg">No scans in this period yet. Be the first!</p></div>`}</div>`}}
+   `<div class="card">${rows.length?rows.map(lbRow).join(''):`<div style="text-align:center">${mascot(80)}<p class="msg">No scans in this period yet. Be the first!</p></div>`}</div>`}}
  if(playTab==='rw')h=`<p class="msg"><span class="tag">PREVIEW</span> Rewards can't be redeemed yet. This shows how they'll work.</p><div class="bento">${RW.map(([n,c])=>`<div class="card"><div style="display:flex;gap:12px;align-items:center"><div class="ci" style="width:44px;height:44px;border-radius:14px;background:var(--sun);color:#3a2a00;display:grid;place-items:center">${ic('gift')}</div><div style="flex:1"><b>${n}</b><br><small class="msg">${c} points</small></div></div><div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,S.pts/c*100)}%"></i></div><small class="msg">${Math.min(S.pts,c)} / ${c} · ${S.pts>=c?'Unlocked (not redeemable yet)':'Locked'}</small></div>`).join('')}</div>`;
  $('playBody').innerHTML=h;const sg=$('lbSeg');if(sg)sg.querySelectorAll('button').forEach(b=>b.onclick=()=>{lbP=b.textContent;renderPlay()})}
-document.querySelectorAll('#playSeg button').forEach(b=>b.onclick=()=>{playTab=b.dataset.p;if(playTab==='lb')lbCache={};document.querySelectorAll('#playSeg button').forEach(x=>x.classList.toggle('on',x===b));renderPlay()});
-$('qaHist').onclick=()=>{const H=S.hist;$('histBody').innerHTML=H.length?H.map(h=>`<div class="li"><div style="width:40px">${ART[h.m]||''}</div><div><b>${esc(h.i)}</b><br><small>${new Date(h.t).toLocaleString()}</small></div><b>+${h.p}</b></div>`).join(''):`<div style="text-align:center;padding:12px">${mascot(100)}<p class="msg">Nothing yet. Scan your first item!</p></div>`;$('mHist').classList.add('on')};
+function setPlay(t){playTab=t;if(t==='lb')lbCache={};document.querySelectorAll('#playSeg button').forEach(x=>x.classList.toggle('on',x.dataset.p===t));renderPlay()}
+document.querySelectorAll('#playSeg button').forEach(b=>b.onclick=()=>setPlay(b.dataset.p));
+$('qaHist').onclick=()=>{const H=S.hist;$('histBody').innerHTML=H.length?H.map(h=>`<div class="li"><div style="width:40px">${ART[h.m]||''}</div><div class="grow"><b>${esc(h.i)}</b><br><small>${new Date(h.t).toLocaleString()}</small></div><b>+${h.p}</b></div>`).join(''):`<div style="text-align:center;padding:12px">${mascot(100)}<p class="msg">Nothing yet. Scan your first item!</p></div>`;$('mHist').classList.add('on')};
 /* ---------- settings ---------- */
 function applyTheme(){const t=store.get('bb3:theme');if(t)document.documentElement.dataset.theme=t}
 $('swTheme').onclick=()=>{const d=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=d?'dark':'light';store.set('bb3:theme',d?'dark':'light');render()};
@@ -179,11 +187,15 @@ $('pwGo').onclick=guard($('pwGo'),$('pwMsg'),async()=>{const p=$('newPw').value;
  const {error}=await sb.auth.updateUser({password:p});if(error)throw error;closeAll();toast("Password changed");SFX.ok()});
 $('avBtn').onclick=()=>$('avFile').click();
 $('avFile').onchange=e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const i=new Image();
- i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=128;const m=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,128,128);URL.revokeObjectURL(i.src);
-  c.toBlob(async b=>{try{const path=S.uid+'/avatar.jpg',up=await sb.storage.from('avatars').upload(path,b,{upsert:true,contentType:'image/jpeg'});if(up.error)throw up.error;
-   const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now(),u=await sb.from('profiles').update({avatar_url:url}).eq('id',S.uid);if(u.error)throw u.error;
-   S.avatar=url;lbCache={};render();SFX.ok()}catch(err){toast("Couldn't upload that photo");SFX.bad()}},'image/jpeg',.8)};
- i.onerror=()=>toast("Couldn't read that image");i.src=URL.createObjectURL(f)};
+ i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=256;const m=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-m)/2,(i.height-m)/2,m,m,0,0,256,256);URL.revokeObjectURL(i.src);
+  c.toBlob(async b=>{try{if(!b)throw new Error('Could not encode the image');
+   // a new file name every time: plain upload needs only the INSERT permission (no overwrite, no SELECT policy)
+   const path=S.uid+'/avatar-'+Date.now()+'.jpg',up=await sb.storage.from('avatars').upload(path,b,{contentType:'image/jpeg',cacheControl:'3600'});if(up.error)throw up.error;
+   const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl,u=await sb.from('profiles').update({avatar_url:url}).eq('id',S.uid);if(u.error)throw u.error;
+   const old=S.avatar;S.avatar=url;lbCache={};render();SFX.ok();toast("Profile photo updated");
+   try{const mm=old&&old.match(/\/avatars\/([^?]+)/);if(mm)await sb.storage.from('avatars').remove([decodeURIComponent(mm[1])])}catch(x){} // tidy up the old file, best effort
+  }catch(err){console.error('avatar upload failed',err);toast("Couldn’t upload that photo"+(err&&err.message?" ("+String(err.message).slice(0,70)+")":""));SFX.bad()}},'image/jpeg',.85)};
+ i.onerror=()=>toast("Couldn’t read that image. Try a JPEG or PNG.");i.src=URL.createObjectURL(f)};
 /* ---------- scanner UI ---------- */
 let pStream=null;
 const camSet=c=>$('cam2').className='cam '+c;
@@ -191,9 +203,7 @@ function stopPcam(){if(pStream){pStream.getTracks().forEach(t=>t.stop());pStream
 function camReset(){stopPcam();$('prev').classList.remove('on');camSet('');$('shutter').hidden=true;$('snap').textContent='Start camera'}
 $('snap').onclick=async()=>{if(pStream){camReset();return}$('res').style.display='none';$('prev').classList.remove('on');
  try{pStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280}}});const v=$('pcam');v.srcObject=pStream;v.classList.add('on');await v.play();camSet('live');$('shutter').hidden=false;$('snap').textContent='Stop camera'}
- catch(e){stopPcam();$('scanMsg').textContent="Camera unavailable. Tap \"Upload a photo\" instead."}};
-$('upload').onclick=()=>$('photo').click();
-$('photo').onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)handle(f)};
+ catch(e){stopPcam();$('scanMsg').textContent="Camera unavailable. Allow camera access in your browser settings, then tap Start camera again."}};
 $('shutter').onclick=()=>{const v=$('pcam'),c=document.createElement('canvas'),s=Math.min(1,800/Math.max(v.videoWidth,v.videoHeight));c.width=v.videoWidth*s;c.height=v.videoHeight*s;c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(b=>handle(b),'image/jpeg',.85)};
 function shrink(f){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(ok,'image/jpeg',.8)};i.onerror=no;i.src=URL.createObjectURL(f)})}
 async function handle(f){cur=null;$('res').style.display='none';$('scanMsg').textContent="";
@@ -209,10 +219,40 @@ $('addBin').onclick=async()=>{if(!cur||adding)return;adding=true;const c=cur;
   roll();const t=todayStr();S.pts=data.total_points;S.items=data.items;S.streak=data.streak;S.last=t;
   S.mats[c.m]=(S.mats[c.m]||0)+1;S.dly.scans++;if(c.item==="Aluminum can")S.dly.cans++;if(c.m==="Plastic")S.wkl.plastic++;
   S.hist.unshift({i:c.item,m:c.m,p:data.points_awarded,t:Date.now()});S.hist=S.hist.slice(0,30);lbCache={};
-  toast("+"+data.points_awarded+" points! Walk it to the "+MATS[c.m].bin+" bin. You're #"+data.item_count_today_campus+" "+c.item.toLowerCase()+" scanned on campus today.");
+  showFact(`<div class="fc-pts">+${data.points_awarded} points!</div><p>Walk your ${esc(c.item.toLowerCase())} to the <b>${MATS[c.m].bin}</b> bin.</p><div class="fc-fact">${mascot(40)}<span><b>Did you know?</b> ${FACTS[c.m]}</span></div><small class="msg">You’re #${data.item_count_today_campus} ${esc(c.item.toLowerCase())} scanned on campus today.</small>`);
   cur=null;$('res').style.display='none';camReset();render();
   if(data.level_up)setTimeout(()=>{SFX.lvl();openGen("Level up!","You reached level "+data.level+". Keep sorting!")},700);else SFX.ok()
  }catch(e){toast(scanErr(e));SFX.bad()}finally{adding=false}};
+/* ---------- swipe-away fun fact card ---------- */
+const fcCard=$('factCard'),fcIn=$('fcIn');
+function showFact(html){$('fcBody').innerHTML=html;fcIn.style.transition='none';fcIn.style.transform='';fcIn.style.opacity='';fcCard.classList.add('on');fcIn.classList.remove('in');void fcIn.offsetWidth;fcIn.classList.add('in')}
+function dismissFact(dx,dy){if(!fcCard.classList.contains('on'))return;const x=dx||0,y=dy||0;fcIn.style.transition='transform .22s ease-in,opacity .22s';
+ fcIn.style.transform=Math.abs(x)>=Math.abs(y)?`translate(${x>=0?520:-520}px,${y}px) rotate(${x>=0?18:-18}deg)`:'translateY(-220px)';fcIn.style.opacity='0';
+ setTimeout(()=>{fcCard.classList.remove('on');fcIn.style.transition='none';fcIn.style.transform='';fcIn.style.opacity=''},240)}
+(function(){let pid=null,x0=0,y0=0;
+ fcIn.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;pid=e.pointerId;x0=e.clientX;y0=e.clientY;try{fcIn.setPointerCapture(pid)}catch(x){}fcIn.style.transition='none';fcIn.classList.remove('in')});
+ fcIn.addEventListener('pointermove',e=>{if(e.pointerId!==pid)return;const dx=e.clientX-x0,dy=Math.min(0,e.clientY-y0);fcIn.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/28}deg)`;fcIn.style.opacity=String(Math.max(.35,1-Math.hypot(dx,dy)/360))});
+ const end=e=>{if(e.pointerId!==pid)return;pid=null;const dx=e.clientX-x0,dy=e.clientY-y0;
+  if(Math.abs(dx)>70||dy<-55)dismissFact(dx,dy);else{fcIn.style.transition='transform .25s cubic-bezier(.3,1.4,.5,1),opacity .2s';fcIn.style.transform='';fcIn.style.opacity=''}};
+ fcIn.addEventListener('pointerup',end);fcIn.addEventListener('pointercancel',end);
+ fcIn.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')dismissFact(-200,0);if(e.key==='ArrowRight')dismissFact(200,0)});
+ $('fcX').onclick=()=>dismissFact(300,0)})();
+/* ---------- add to home screen tutorial ---------- */
+let deferredInstall=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('instNow').hidden=false});
+$('instNow').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;$('instNow').hidden=true;closeAll()};
+const standalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const platform=()=>{const u=navigator.userAgent;return /iPhone|iPad|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)?'ios':/Android/.test(u)?'android':'desktop'};
+const shareIc='<svg class="sh" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/></svg>';
+const INST={
+ ios:["Open BinBuddy in <b>Safari</b> (the blue compass), not inside another app.","Tap the <b>Share</b> button "+shareIc+" at the bottom of the screen (on iPad it’s at the top).","Scroll down and tap <b>Add to Home Screen</b>.","Tap <b>Add</b> in the top corner. The BinBuddy icon appears on your home screen.","Open BinBuddy from that icon. It runs full screen like an app."],
+ android:["Open BinBuddy in <b>Chrome</b>.","Tap the <b>⋮</b> menu in the top right corner.","Tap <b>Install app</b> or <b>Add to Home screen</b>.","Tap <b>Install</b> to confirm. The BinBuddy icon appears with your other apps."],
+ desktop:["Use <b>Chrome</b> or <b>Edge</b>.","Click the <b>install icon</b> at the right end of the address bar, or open the browser menu and choose <b>Install BinBuddy</b>.","On Safari (Mac), choose <b>File → Add to Dock</b>."]};
+function openInstall(p){p=p||platform();$('iMas').innerHTML=mascot(72);
+ document.querySelectorAll('#instSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.p===p);b.onclick=()=>openInstall(b.dataset.p)});
+ $('instBody').innerHTML=INST[p].map(s=>`<li><span>${s}</span></li>`).join('');$('instNow').hidden=!(deferredInstall&&p===platform());$('mInstall').classList.add('on')}
+$('howInstall').onclick=()=>openInstall();
+function maybeInstallTip(){if(store.get('bb3:installSeen')||standalone())return;store.set('bb3:installSeen',1);setTimeout(()=>{if(!document.querySelector('.modal.on'))openInstall()},900)}
 /* ---------- start ---------- */
 applyTheme();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 try{if(window.supabase&&window.BB_CONFIG)sb=window.supabase.createClient(BB_CONFIG.url,BB_CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}})}catch(e){sb=null}

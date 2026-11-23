@@ -5,7 +5,7 @@ let camStream=null,scanning=false,nativeDet=null;
 try{nativeDet=new BarcodeDetector({formats:["code_128","code_39","codabar","itf","ean_13","upc_a","qr_code"]})}catch(e){}
 const wasmRead=()=>window.ZXingWASM&&ZXingWASM.readBarcodes;
 function stopCam(){scanning=false;if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}$('cam').style.display='none'}
-function gotId(t){stopCam();$('sid').value=t;$('loginMsg').textContent="Got it: "+t+". Tap Create account.";if(navigator.vibrate)navigator.vibrate(80)}
+function gotId(t){stopCam();$('sid').value=t;$('loginMsg').textContent="Got it: "+t+". Tap Use this ID.";if(navigator.vibrate)navigator.vibrate(80)}
 $('scanBtn').onclick=async()=>{
   if(scanning||camStream)return;
   if(!nativeDet&&!wasmRead()){$('loginMsg').textContent="Scanner is still loading. Check your connection and try again.";return}
