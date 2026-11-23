@@ -1,10 +1,10 @@
-/* BinBuddy map: our own map UI, drawn on a canvas. Buildings, roads and paths come from OpenStreetMap data (Overpass API, no key),
-   cached on the device. Walking routes come from routing.openstreetmap.de (foot profile). No Google/Apple map, no tiles, no API keys.
+/* BinBuddy map: bins, route and gestures are drawn on our own canvas. The base map (buildings, roads, labels) is OpenFreeMap vector tiles
+   rendered by MapLibre GL underneath the canvas (free, no API key). If MapLibre can't start, we fall back to OpenStreetMap data from Overpass. Walking routes come from routing.openstreetmap.de (foot profile). No Google/Apple map, no tiles, no API keys.
    Bins live in the Supabase `bins` table. Signed-in users add bins with add_bin() (see supabase/schema_patch_2.sql). */
 window.BBMap=(()=>{
 const cv=$('mapCv'),wrap=$('mapWrap'),g=cv.getContext('2d');
 const MLAT=111320,LET={Recycling:'R',Compost:'C',Trash:'T'};
-let W=0,H=0,dpr=1,bins=[],filter='All',sel=null,me=null,watchId=null,isOpen=false,raf=0,placing=false,loading=false,loadErr='',hasView=false,anim=null,col={},pend=null,saving=false,lastScale='',lastFix=0,route=null,tmr=0,active=0;
+let W=0,H=0,dpr=1,bins=[],filter='All',sel=null,me=null,watchId=null,isOpen=false,raf=0,placing=false,loading=false,loadErr='',hasView=false,anim=null,col={},pend=null,saving=false,lastScale='',lastFix=0,route=null,tmr=0,active=0,gl=null,glKey='',glErr=false,glStyle='';
 const TS=0.005,MAXMPP=5,OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'],ROUTE='https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
 const tiles=new Map(),tq=[];
 const C={lat:0,lng:0,mpp:2};
@@ -18,9 +18,25 @@ function dist(a,b,c,d){const R=6371000,r=Math.PI/180,x=(d-b)*r*Math.cos((a+c)/2*
 const fmt=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';
 const vis=()=>bins.filter(b=>filter==='All'||b.t===filter);
 function kick(){if(!isOpen||raf)return;raf=requestAnimationFrame(loop)}
-function loop(t){raf=0;if(!isOpen)return;if(anim)anim(t);draw(t);if(anim||me||sel!=null)kick()}
-function resize(){const r=wrap.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);kick();tilesSoon()}
+function loop(t){raf=0;if(!isOpen)return;if(anim)anim(t);syncBase();draw(t);if(anim||me||sel!=null)kick()}
+function resize(){const r=wrap.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);if(gl)gl.resize();kick();tilesSoon()}
 new ResizeObserver(resize).observe(wrap);
+/* ---- base map: MapLibre + OpenFreeMap, kept in lockstep with our canvas camera ---- */
+const isDark=()=>{const t=document.documentElement.dataset.theme;return t==='dark'||(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)};
+const styleUrl=()=>'https://tiles.openfreemap.org/styles/'+(isDark()?'dark':'liberty');
+const glZoom=()=>Math.log2(40075016.686*Math.cos(C.lat*Math.PI/180)/(512*C.mpp));
+function initBase(){if(gl||glErr||!hasView||!W)return;
+ if(!window.maplibregl){if(!initBase.t)initBase.t=setTimeout(()=>{initBase.t=0;if(!window.maplibregl){glErr=true;tilesSoon();kick()}else initBase()},4000);return}
+ try{glStyle=styleUrl();gl=new maplibregl.Map({container:'mapBase',style:glStyle,center:[C.lng,C.lat],zoom:glZoom(),interactive:false,attributionControl:false,fadeDuration:0,maxZoom:24,pitchWithRotate:false,dragRotate:false});
+  gl.on('load',()=>{setStat('');kick()});
+  gl.on('idle',()=>{if(gl&&gl.isStyleLoaded())setStat('')});
+  gl.on('error',e=>{if(gl&&!gl.isStyleLoaded())setStat('Couldn’t load the map. Tap to retry')});
+  glKey=''}
+ catch(e){gl=null;glErr=true;console.warn('MapLibre failed',e);tilesSoon()}}
+function syncBase(){if(!hasView)return;if(!gl){initBase();return}
+ const want=styleUrl();if(want!==glStyle){glStyle=want;gl.setStyle(want)}
+ const k=C.lat.toFixed(7)+'|'+C.lng.toFixed(7)+'|'+C.mpp.toFixed(5)+'|'+W+'|'+H;if(k===glKey)return;glKey=k;
+ gl.jumpTo({center:[C.lng,C.lat],zoom:glZoom()});gl.redraw()}
 /* ---- drawing ---- */
 function pinShape(x,y,color,s,letter){g.save();g.translate(x,y);g.scale(s,s);g.shadowColor='rgba(0,0,0,.3)';g.shadowBlur=8;g.shadowOffsetY=3;
  g.beginPath();g.moveTo(0,0);g.bezierCurveTo(-5,-9,-15,-14,-15,-25);g.arc(0,-25,15,Math.PI,0);g.bezierCurveTo(15,-14,5,-9,0,0);g.closePath();g.fillStyle=color;g.fill();
@@ -44,12 +60,16 @@ function drawBase(){const ml=mLng(),k=1/C.mpp,hw=W/2,hh=H/2,px=lng=>hw+(lng-C.ln
   for(const w of by.b){if(!w.name||n>45)continue;const cx=(w.x0+w.x1)/2,cy=(w.y0+w.y1)/2,tw=g.measureText(w.name).width;if(w.x1-w.x0<Math.min(tw*.7,60)||cx<10||cx>W-10||cy<10||cy>H-10)continue;
    if(boxes.some(b=>Math.abs(b[0]-cx)<(b[2]+tw)/2&&Math.abs(b[1]-cy)<14))continue;boxes.push([cx,cy,tw]);n++;g.lineWidth=3;g.strokeStyle=col.bg;g.strokeText(w.name,cx,cy);g.fillStyle=col.ink;g.fillText(w.name,cx,cy)}}
  return any}
-function drawRoute(){if(!route)return;const pts=route.pts||[[me.lat,me.lng],[route.bin.lat,route.bin.lng]];g.lineCap='round';g.lineJoin='round';
- const path=()=>{g.beginPath();pts.forEach((p,n)=>{const[x,y]=toS(p[0],p[1]);n?g.lineTo(x,y):g.moveTo(x,y)})};
- g.setLineDash([]);path();g.strokeStyle='#fff';g.lineWidth=9;g.stroke();path();g.setLineDash(route.pts?[]:[8,8]);g.strokeStyle='#17a574';g.lineWidth=5;g.stroke();g.setLineDash([])}
-function draw(t){t=t||0;g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle=col.bg;g.fillRect(0,0,W,H);
+function drawRoute(){if(!route)return;g.lineCap='round';g.lineJoin='round';
+ const b=route.bin,core=route.pts,a=me?[me.lat,me.lng]:null,z=[b.lat,b.lng];
+ const line=(pts,dash)=>{if(pts.length<2)return;g.beginPath();pts.forEach((p,n)=>{const[x,y]=toS(p[0],p[1]);n?g.lineTo(x,y):g.moveTo(x,y)});g.setLineDash(dash);g.strokeStyle='#fff';g.lineWidth=9;g.stroke();g.strokeStyle='#17a574';g.lineWidth=5;g.stroke();g.setLineDash([])};
+ /* The walking route snaps to the nearest footpath, so it starts and ends a little away from you and from the bin.
+    Join both ends with short dashed links so the line always runs from you to the bin. */
+ if(core&&core.length>1){line(core,[]);if(a&&dist(a[0],a[1],core[0][0],core[0][1])>1.5)line([a,core[0]],[6,7]);const e=core[core.length-1];if(dist(e[0],e[1],z[0],z[1])>1.5)line([e,z],[6,7])}
+ else if(a)line([a,z],[8,8])}
+function draw(t){t=t||0;g.setTransform(dpr,0,0,dpr,0,0);if(gl)g.clearRect(0,0,W,H);else{g.fillStyle=col.bg;g.fillRect(0,0,W,H)}
  const ml=mLng(),X0=C.lng*ml,Y0=C.lat*MLAT,st=[1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000].find(s=>s/C.mpp>=48)||50000;g.lineWidth=1;
- const base=hasView&&drawBase();
+ const base=gl?true:hasView&&drawBase();
  if(!base){
  for(let k=Math.floor((X0-W/2*C.mpp)/st),e=Math.ceil((X0+W/2*C.mpp)/st);k<=e;k++){const x=Math.round(W/2+(k*st-X0)/C.mpp)+.5;g.strokeStyle=k%5===0?col.g2:col.g1;g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke()}
  for(let k=Math.floor((Y0-H/2*C.mpp)/st),e=Math.ceil((Y0+H/2*C.mpp)/st);k<=e;k++){const y=Math.round(H/2-(k*st-Y0)/C.mpp)+.5;g.strokeStyle=k%5===0?col.g2:col.g1;g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke()}}
@@ -79,7 +99,7 @@ function parse(json){const out=[];for(const e of json.elements||[]){if(e.type!==
  out.push({k,c,pts,bb:[s,w,n,ee],name:k==='b'?(t.name||t['addr:housename']||''):''})}return out}
 function tilesSoon(){clearTimeout(tmr);tmr=setTimeout(ensureTiles,250)}
 function setStat(t){const e=$('mapStat');e.hidden=!t;e.textContent=t||''}
-function ensureTiles(){if(!isOpen||!hasView)return;const vs=visibleTiles();
+function ensureTiles(){if(gl||!isOpen||!hasView||(!glErr&&window.maplibregl))return;const vs=visibleTiles();
  if(C.mpp>MAXMPP){setStat('Zoom in to see buildings');return}
  vs.sort((a,b)=>Math.hypot((a[0]+.5)*TS-C.lng,(a[1]+.5)*TS-C.lat)-Math.hypot((b[0]+.5)*TS-C.lng,(b[1]+.5)*TS-C.lat));
  let busy=false,err=false;
@@ -97,7 +117,7 @@ async function fetchTile(i,j){const t=tiles.get(i+','+j);if(!t)return;active++;
   if(!json)throw new Error('overpass');t.ways=parse(json);t.ok=true;t.err=false}
  catch(e){t.err=true;t.t=Date.now()}
  finally{t.busy=false;active--;pump();kick();if(!tq.length&&active===0)ensureTiles()}}
-$('mapStat').onclick=()=>{tiles.forEach(t=>{if(t.err)t.t=0});ensureTiles()};
+$('mapStat').onclick=()=>{if(gl){glStyle='';glKey='';setStat('Loading map…');kick();return}tiles.forEach(t=>{if(t.err)t.t=0});ensureTiles()};
 /* ---- gestures ---- */
 const ptr=new Map();let gs=null;
 const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
@@ -130,8 +150,8 @@ function select(id,focus){const b=bins.find(x=>x.id===id);if(!b)return;sel=id;if
 async function walkTo(b){if(!me){const m=await locate(false);if(!m)return}
  const r=route={bin:b,loading:true,pts:null,dist:dist(me.lat,me.lng,b.lat,b.lng)};renderInfo();fitPts([[me.lat,me.lng],[b.lat,b.lng]],.4);
  try{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),12000),res=await fetch(`${ROUTE}${me.lng},${me.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`,{signal:ctl.signal});clearTimeout(to);
-  const j=await res.json();if(!res.ok||!j.routes||!j.routes[0])throw new Error('route');r.pts=j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);r.dist=j.routes[0].distance}catch(e){r.pts=null}
- r.loading=false;if(route===r){renderInfo();if(r.pts)fitPts(r.pts.concat([[me.lat,me.lng]]),.4);kick()}}
+  const j=await res.json();if(!res.ok||!j.routes||!j.routes[0])throw new Error('route');r.pts=j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);const f=r.pts[0],l=r.pts[r.pts.length-1];r.dist=j.routes[0].distance+dist(me.lat,me.lng,f[0],f[1])+dist(l[0],l[1],b.lat,b.lng)}catch(e){r.pts=null}
+ r.loading=false;if(route===r){renderInfo();if(r.pts)fitPts(r.pts.concat([[me.lat,me.lng],[b.lat,b.lng]]),.4);kick()}}
 function deselect(){sel=null;route=null;$('mapInfo').hidden=true;kick()}
 async function removeBin(b){if(!confirm('Delete this bin from the map?'))return;
  try{const{error}=await sb.rpc('delete_my_bin',{p_id:b.id});if(error)throw error;toast('Bin deleted');deselect();await loadBins()}catch(e){toast('Couldn’t delete that bin');SFX.bad()}}
@@ -185,7 +205,7 @@ $('zIn').onclick=()=>hasView&&fly(C.lat,C.lng,C.mpp*.5,250);$('zOut').onclick=()
 document.querySelectorAll('#binSeg button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;document.querySelectorAll('#binSeg button').forEach(x=>x.classList.toggle('on',x===b));if(sel!=null&&!vis().some(x=>x.id===sel))deselect();renderList();kick()});
 new MutationObserver(()=>{readCol();kick()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{readCol();kick()});
-function open(){isOpen=true;readCol();resize();if(me)startWatch();$('mapHint').hidden=hasView;loadBins();kick();tilesSoon()}
+function open(){isOpen=true;readCol();resize();if(me)startWatch();$('mapHint').hidden=hasView;loadBins();syncBase();kick();tilesSoon()}
 function close(){isOpen=false;stopWatch();if(raf){cancelAnimationFrame(raf);raf=0}if(placing)stopPlacing()}
 readCol();
 return{open,close,refreshList:()=>renderList()}})();
