@@ -34,6 +34,9 @@ if(!S.dly||S.dly.d!==t)S.dly={d:t,scans:0,cans:0};if(!S.wkl||S.wkl.w!==w)S.wkl={
 const CH=[{t:"Complete 3 scans today",k:"Daily",i:"scan",p:()=>[S.dly.scans,3]},{t:"Recycle an aluminum can",k:"Daily",i:"bolt",p:()=>[S.dly.cans,1]},{t:"Recycle five plastic items",k:"Weekly",i:"globe",p:()=>[S.wkl.plastic,5]},{t:"Keep a 3-day streak",k:"Weekly",i:"flame",p:()=>[S.streak,3]}];
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let sb=null,S=null,cur=null,onId=null,playTab='lb';
+/* ---------- permissions (the server enforces these too; hiding buttons is just for tidiness) ---------- */
+const adminOn=()=>!!(S&&S.perms&&S.perms.admin&&store.get('bb3:admin')!==false);
+const canAdd=()=>!!(S&&S.perms&&(S.perms.can_add||adminOn()));
 /* ---------- sound ---------- */
 let AC=null;
 function tone(f,d,t,g,s,sl){if(store.get('bb3:mute'))return;try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),v=AC.createGain(),n=AC.currentTime+(s||0);o.type=t||'sine';o.frequency.setValueAtTime(f,n);if(sl)o.frequency.exponentialRampToValueAtTime(f*sl,n+d);v.gain.setValueAtTime(g||.05,n);v.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(v);v.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
@@ -60,7 +63,9 @@ function show(v,first){document.documentElement.style.setProperty('--dir',order.
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 /* ---------- ID scanner modal ---------- */
 function openScanner(cb){onId=cb;$('sid').value='';$('loginMsg').textContent='';$('mScan').classList.add('on')}
-$('useId').onclick=()=>{const v=$('sid').value.trim();if(!/^[A-Za-z0-9-]{4,20}$/.test(v)){$('loginMsg').textContent="Enter 4–20 letters or numbers.";SFX.bad();return}const cb=onId;closeAll();if(cb)cb(v)};
+/* scanners sometimes add spaces, * or other characters: keep only letters, numbers and dashes (the database and the id-login function do the same) */
+const normId=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9-]/g,'');
+$('useId').onclick=()=>{const v=normId($('sid').value);if(!/^[A-Z0-9-]{4,20}$/.test(v)){$('loginMsg').textContent="Enter 4–20 letters or numbers.";SFX.bad();return}const cb=onId;closeAll();if(cb)cb(v)};
 /* ---------- accounts (Supabase) ---------- */
 const slug=n=>n.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
 const todayStr=()=>new Date().toDateString();
@@ -102,7 +107,7 @@ async function idVerify(code){const r=await sb.functions.invoke('id-login',{body
  const s=await sb.auth.setSession({access_token:r.data.access_token,refresh_token:r.data.refresh_token});if(s.error)throw s.error;await afterAuth()}
 $('lgId').onclick=()=>{if(!needSb($('lgMsg')))return;openScanner(async v=>{$('lgMsg').textContent="Sending a code…";
  try{await idRequest(v)}catch(e){$('lgMsg').textContent=e.message;SFX.bad();return}
- toVerify('', '', 'id',"If that ID is linked to an account, we emailed a code to that account’s email address. Enter it below.");pend.sid=v;$('lgMsg').textContent=''})};
+ toVerify('', '', 'id',"We sent a code to the email on the account that has this ID linked. Enter it below. (For privacy we say the same thing whether or not an account matched.) No email after a minute? Your ID may not be linked yet: log in with your email and password, then link it in Profile.");pend.sid=v;$('lgMsg').textContent=''})};
 $('vGo').onclick=guard($('vGo'),$('vMsg'),async()=>{const t=$('vCode').value.trim();if(!/^\d{6,10}$/.test(t)){$('vMsg').textContent="Enter the code from your email.";SFX.bad();return}
  if(pend.mode==='id'){await idVerify(t);return}
  const {error}=await sb.auth.verifyOtp({email:pend.email,token:t,type:'signup'});if(error)throw error;await afterAuth()});
@@ -129,16 +134,18 @@ async function afterAuth(){ // link a student ID chosen during signup, then ente
  SFX.ok();await enter()}
 async function loadMe(){
  const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error('no session');const uid=session.user.id;
- const [p,pi,sm]=await Promise.all([sb.from('profiles').select('username,avatar_url,points,items,streak,last_scan').eq('id',uid).single(),sb.from('private_info').select('student_id').eq('id',uid).single(),sb.rpc('my_summary')]);
+ const [p,pi,sm,pm]=await Promise.all([sb.from('profiles').select('username,avatar_url,points,items,streak,last_scan').eq('id',uid).single(),sb.from('private_info').select('student_id').eq('id',uid).single(),sb.rpc('my_summary'),sb.rpc('my_perms')]);
  if(p.error)throw p.error;
  const d=(!sm.error&&sm.data)||{mats:{},today_scans:0,today_cans:0,week_plastic:0,recent:[]};
  if(sm.error)console.warn('my_summary missing: run schema_patch_1.sql',sm.error.message);
- S={uid,email:session.user.email,name:p.data.username,avatar:p.data.avatar_url,pts:p.data.points,items:p.data.items,streak:p.data.streak,
+ if(pm.error)console.warn('my_perms missing: run schema_patch_4.sql',pm.error.message);
+ const perms=(!pm.error&&pm.data)||{admin:false,can_add:false};
+ S={uid,perms,email:session.user.email,name:p.data.username,avatar:p.data.avatar_url,pts:p.data.points,items:p.data.items,streak:p.data.streak,
   last:p.data.last_scan?new Date(p.data.last_scan+'T00:00:00').toDateString():null,id:(pi.data&&pi.data.student_id)||null,mats:d.mats||{},
   hist:(d.recent||[]).map(r=>({i:r.item,m:r.material,p:r.points,t:Date.parse(r.t)})),dly:{d:todayStr(),scans:d.today_scans,cans:d.today_cans},wkl:{w:wk(),plastic:d.week_plastic}}}
 async function enter(){
  try{await loadMe()}catch(e){screen('welcome');$('welMsg').textContent="Couldn't load your account. "+authErr(e);return}
- roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true);maybeInstallTip()}
+ roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true);maybeInstallTip();if(window.BBMap)BBMap.load()}
 /* ---------- render ---------- */
 const setAv=(e,s)=>{e.style.backgroundImage=s.avatar?`url("${s.avatar}")`:'';e.textContent=s.avatar?'':s.name[0].toUpperCase()};
 const bdg=s=>BADGES.map(b=>{const[a,g]=b.p(s),got=a>=g;return`<div class="badge ${got?'got':''}"><div class="bi">${ic(b.i)}</div><b>${b.n}</b><div class="msg">${got?'Unlocked':Math.min(a,g)+' / '+g}</div></div>`}).join('');
@@ -151,7 +158,7 @@ function render(){roll();const lv=Math.floor(S.pts/100)+1,h=new Date().getHours(
  $('mats').innerHTML=Object.entries(MATS).map(([k,m])=>`<button class="mat" data-m="${k}"><div class="em" style="background:${m.c}">${ART[k]}</div><b>${k}</b><small>${m.s}</small></button>`).join('');
  document.querySelectorAll('.mat').forEach(b=>b.onclick=()=>{const m=MATS[b.dataset.m];$('iArt').innerHTML=ART[b.dataset.m];$('iT').textContent=b.dataset.m;$('iBin').textContent="Goes in: "+m.bin+" bin";$('iD').textContent=m.d;$('iEx').textContent="Examples: "+m.ex;$('mInfo').classList.add('on')});
  $('badges').innerHTML=$('badges2').innerHTML=bdg(S);$('chHome').innerHTML=CH.map(chRow).join('');
- renderBins();renderPlay();
+ renderBins();renderPlay();$('adminOpen').hidden=!(S.perms&&S.perms.admin);
  $('pName').value=S.name;$('mItems').textContent=S.items;$('mStreak').textContent=S.streak;$('mPts').textContent=S.pts;$('mEmail').textContent=S.email||'';$('mId').textContent=S.id?"Linked ("+S.id+")":"Not linked";
  const dk=document.documentElement.dataset.theme==='dark',snd=!store.get('bb3:mute');$('swTheme').classList.toggle('on',dk);$('swTheme').setAttribute('aria-checked',dk);$('swSound').classList.toggle('on',snd);$('swSound').setAttribute('aria-checked',snd)}
 function renderBins(){window.BBMap&&BBMap.refreshList()}
@@ -173,6 +180,21 @@ function renderPlay(){let h='';
 function setPlay(t){playTab=t;if(t==='lb')lbCache={};document.querySelectorAll('#playSeg button').forEach(x=>x.classList.toggle('on',x.dataset.p===t));renderPlay()}
 document.querySelectorAll('#playSeg button').forEach(b=>b.onclick=()=>setPlay(b.dataset.p));
 $('qaHist').onclick=()=>{const H=S.hist;$('histBody').innerHTML=H.length?H.map(h=>`<div class="li"><div style="width:40px">${ART[h.m]||''}</div><div class="grow"><b>${esc(h.i)}</b><br><small>${new Date(h.t).toLocaleString()}</small></div><b>+${h.p}</b></div>`).join(''):`<div style="text-align:center;padding:12px">${mascot(100)}<p class="msg">Nothing yet. Scan your first item!</p></div>`;$('mHist').classList.add('on')};
+/* ---------- admin panel (only the admin account sees the button; every action is checked again on the server) ---------- */
+let auUsers=[],auFilter='all';
+function adminErr(e){const m=(e&&e.message)||'';if(/not_allowed|42501/.test(m+(e.code||'')))return"Only the admin account can do that.";if(/find the function|PGRST202/.test(m+(e.code||'')))return"Admin tools aren’t set up yet. Run schema_patch_4.sql in Supabase.";return"Something went wrong. Check your connection and try again."}
+function renderUsers(){const q=$('auQ').value.trim().toLowerCase();
+ const L=auUsers.filter(u=>(auFilter==='all'||u.can_add_bins)&&(!q||u.username.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)));
+ $('auList').innerHTML=L.length?L.map(u=>`<div class="li"><div class="av" style="${u.avatar?'':''}">${esc(u.username[0].toUpperCase())}</div><div class="grow"><b>${esc(u.username)}</b>${u.id===S.uid?' <span class="tag">YOU</span>':''}<br><small>${esc(u.email||'')} · ${u.points} pts · ${u.bins_added} bin${u.bins_added==1?'':'s'} added</small></div><button class="sw ${u.can_add_bins||u.id===S.uid?'on':''}" data-u="${u.id}" role="switch" aria-checked="${!!u.can_add_bins}" aria-label="Can add bins: ${esc(u.username)}" ${u.id===S.uid?'disabled title="The admin can always add bins in Admin mode"':''}></button></div>`).join(''):`<p class="msg">${auUsers.length?'No one matches.':'No users yet.'}</p>`;
+ $('auList').querySelectorAll('.sw[data-u]').forEach(b=>{if(b.disabled)return;b.onclick=async()=>{const u=auUsers.find(x=>x.id===b.dataset.u),want=!u.can_add_bins;b.disabled=true;
+  try{const {error}=await sb.rpc('admin_set_can_add',{p_user:u.id,p_allowed:want});if(error)throw error;u.can_add_bins=want;toast(want?u.username+" can now add bins":u.username+" can no longer add bins");SFX.ok()}catch(e){toast(adminErr(e));SFX.bad()}
+  renderUsers()}})}
+async function loadUsers(){$('auList').innerHTML='<p class="msg">Loading…</p>';
+ try{const {data,error}=await sb.rpc('admin_list_users');if(error)throw error;auUsers=data||[];renderUsers()}catch(e){$('auList').innerHTML=`<p class="msg">${esc(adminErr(e))}</p>`}}
+function openAdmin(){if(!(S&&S.perms&&S.perms.admin))return;const on=store.get('bb3:admin')!==false;$('swAdmin').classList.toggle('on',on);$('swAdmin').setAttribute('aria-checked',on);$('mAdmin').classList.add('on');loadUsers()}
+$('adminOpen').onclick=openAdmin;$('adminBarBtn').onclick=openAdmin;$('auRef').onclick=loadUsers;$('auQ').addEventListener('input',renderUsers);
+$('auSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{auFilter=b.dataset.u;$('auSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderUsers()});
+$('swAdmin').onclick=()=>{const on=store.get('bb3:admin')===false;store.set('bb3:admin',on);$('swAdmin').classList.toggle('on',on);$('swAdmin').setAttribute('aria-checked',on);if(window.BBMap)BBMap.refreshPerms();toast(on?"Admin mode on":"Admin mode off")};
 /* ---------- settings ---------- */
 function applyTheme(){const t=store.get('bb3:theme');if(t)document.documentElement.dataset.theme=t}
 $('swTheme').onclick=()=>{const d=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=d?'dark':'light';store.set('bb3:theme',d?'dark':'light');render()};

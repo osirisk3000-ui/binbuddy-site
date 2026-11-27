@@ -26,7 +26,7 @@
 <label class="msg" for="lgEmail">Email</label><input type="email" id="lgEmail" autocomplete="email" inputmode="email">
 <label class="msg" for="lgPass">Password</label><input type="password" id="lgPass" autocomplete="current-password">
 <button class="btn" id="lgGo">Log in</button><button class="btn out" id="toReset" style="margin-top:10px">Forgot password</button>
-<button class="btn out" id="lgId" style="margin-top:10px">Log in with student ID</button><p class="msg" style="margin-top:8px">Have a linked student ID? Scan it and we’ll email a code to your account.</p><p class="msg" id="lgMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
+<button class="btn out" id="lgId" style="margin-top:10px">Log in with student ID</button><p class="msg" style="margin-top:8px">Already linked your student ID in Profile? Tap the button, scan it, and we’ll email a one-time code to the email on your account.</p><p class="msg" id="lgMsg" role="status"></p></div><button class="btn out" data-back style="margin-top:12px">Back</button></section>
 <section class="screen" id="reset"><h2>Reset password</h2><div class="card">
 <label class="msg" for="rsEmail">Email</label><input type="email" id="rsEmail" autocomplete="email" inputmode="email"><button class="btn out" id="rsSend">Email me a code</button>
 <label class="msg" for="rsCode" style="display:block;margin-top:12px">Code from the email</label><input type="text" id="rsCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
@@ -40,7 +40,8 @@
   <div class="hc span2"><div style="flex:1;position:relative"><small id="hGreet"></small><h3 id="hHello"></h3><div class="big"><span id="bigPts">0</span> <small style="font-size:14px;font-weight:600">BinBuddy points</small></div>
    <div class="bar"><i id="xp"></i></div><small id="xpTxt"></small></div><div id="hMascot" style="position:relative"></div></div>
   <div class="qa span2"><button class="scanbig" data-go="scan"><span id="qaScan"></span>Scan Trash</button><button data-go="map"><span id="qaBin"></span>Find a Bin</button><button id="qaHist"><span id="qaHi"></span>History</button></div>
-  <div class="stats span2" id="stats"></div></div>
+  <div class="stats span2" id="stats"></div>
+  <button class="stat span2 binstat" data-go="map" id="homeBins"><div class="ic" style="background:#3b82f6"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11zM12 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3"/></svg></div><b id="homeBinsN">–</b><span id="homeBinsSub">Trash cans on campus</span></button></div>
   <h2>Materials</h2><div class="mats" id="mats"></div>
   <div class="bento"><div><h2>Achievements</h2><div class="rowh" id="badges"></div></div><div><h2>Challenges</h2><div class="card" id="chHome"></div></div></div></div>
 
@@ -57,11 +58,13 @@
 
  <div class="view" id="v-map"><h2>Bin map</h2>
   <div class="seg" id="binSeg"><button class="on" data-f="All">All</button><button data-f="Recycling">Recycling</button><button data-f="Compost">Compost</button><button data-f="Trash">Trash</button></div>
+  <div class="seg" id="areaSeg" aria-label="Inside or outside"><button class="on" data-a="All">All</button><button data-a="Outside">Outside</button><button data-a="Inside">Inside</button></div><p class="msg" id="areaNote" style="margin:-4px 2px 10px"></p>
+  <div class="countbar" id="mapCount" role="status">Counting trash cans…</div>
   <div class="bento"><div>
    <div class="srch"><input type="text" enterkeyhint="search" id="srQ" placeholder="Search a building, street or place" aria-label="Search the map" maxlength="80" autocomplete="off"><button class="btn sm" id="srGo">Search</button><button class="btn out sm" id="srClear" hidden aria-label="Clear search">✕</button></div><div class="srres" id="srRes" hidden></div>
    <div class="mapwrap" id="mapWrap"><div id="mapBase" aria-hidden="true"></div><canvas id="mapCv" aria-label="Map of bins. The list below has the same bins."></canvas>
-    <div class="compass" aria-hidden="true">N</div>
-    <div class="mapbtns"><button class="mbtn" id="mapLoc" aria-label="Find my location"><svg class="i" viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button><button class="mbtn" id="mapStyleBtn" aria-label="Change map style"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/></svg></button><button class="mbtn" id="zIn" aria-label="Zoom in">+</button><button class="mbtn" id="zOut" aria-label="Zoom out">−</button></div>
+    <button class="compass" id="compass" aria-label="Point the map north"><svg viewBox="0 0 24 24" id="cpNeedle"><path d="M12 3l4 9h-8z" fill="#e5484d"/><path d="M12 21l-4-9h8z" fill="currentColor" opacity=".35"/></svg></button>
+    <div class="mapbtns"><button class="mbtn" id="mapAuto" aria-pressed="true" aria-label="Auto orientation: map follows the way you face" title="Auto orientation"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg></button><button class="mbtn" id="mapLoc" aria-label="Find my location"><svg class="i" viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button><button class="mbtn" id="mapStyleBtn" aria-label="Change map style"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/></svg></button><button class="mbtn" id="zIn" aria-label="Zoom in">+</button><button class="mbtn" id="zOut" aria-label="Zoom out">−</button></div>
     <div class="stylemenu" id="styleMenu" hidden></div>
     <div class="mapscale" id="mapScale"><span id="scTxt"></span><i id="scBar"></i></div>
     <div class="cross" id="crossPin" hidden><svg viewBox="0 0 40 52"><ellipse cx="20" cy="49" rx="8" ry="2.5" fill="#0004"/><path d="M20 48C14 40 4 33 4 20a16 16 0 0132 0c0 13-10 20-16 28z" fill="#ffc533" stroke="#fff" stroke-width="3"/><circle cx="20" cy="20" r="6" fill="#3a2a00"/></svg></div>
@@ -70,7 +73,9 @@
     <div class="mapinfo" id="mapInfo" hidden></div>
     <div class="placebar" id="placeBar" hidden><p id="placeTxt">Drag the map so the pin sits on the bin.</p><div class="stack two"><button class="btn sun sm" id="placeOk" style="width:100%">Place pin here</button><button class="btn out sm" id="placeNo" style="width:100%">Cancel</button></div></div></div>
    <button class="btn sun" id="nearBtn" style="margin-top:12px">Walk to the nearest bin</button>
-   <div class="stack two" id="addBtns" style="margin-top:12px"><button class="btn" id="binHere">Add bin where I’m standing</button><button class="btn out" id="binDrop">Drop a pin on the map</button></div>
+   <div class="adminbar" id="adminBar" hidden><span>Admin mode is on</span><button class="btn out sm" id="adminBarBtn">Admin panel</button></div>
+   <p class="msg" id="addNote" hidden style="margin-top:12px">Only people the admin has approved can add bins. Ask the admin if you’d like access.</p>
+   <div class="stack two" id="addBtns" style="margin-top:12px" hidden><button class="btn" id="binHere">Add bin where I’m standing</button><button class="btn out" id="binDrop">Drop a pin on the map</button></div>
    <p class="msg" id="mapMsg" role="status"></p></div>
   <div class="card" id="binList"></div></div></div>
 
@@ -80,7 +85,7 @@
   <button class="btn out sm" id="avBtn" style="margin-top:12px">Change photo</button><input type="file" id="avFile" accept="image/*" hidden>
   <input type="text" id="pName" maxlength="20" aria-label="Username"><button class="btn" id="saveName">Save username</button>
   <div class="grid3" style="margin-top:16px"><div><b id="mItems">0</b><span>Items</span></div><div><b id="mStreak">0</b><span>Streak</span></div><div><b id="mPts">0</b><span>Points</span></div></div></div>
-  <div><div class="card"><div class="row"><span>Email</span><b id="mEmail" style="font-size:13px;word-break:break-all"></b></div><div class="row"><span>Student ID</span><b id="mId"></b></div><div class="stack" style="margin-top:10px"><button class="btn out" id="relink">Link / change ID</button><button class="btn out" id="unlink">Unlink ID</button><button class="btn out" id="chPw">Change password</button><button class="btn out" id="howInstall">Add to home screen</button></div>
+  <div><div class="card"><div class="row"><span>Email</span><b id="mEmail" style="font-size:13px;word-break:break-all"></b></div><div class="row"><span>Student ID</span><b id="mId"></b></div><div class="stack" style="margin-top:10px"><button class="btn out" id="relink">Link / change ID</button><button class="btn out" id="unlink">Unlink ID</button><button class="btn out" id="chPw">Change password</button><button class="btn out" id="howInstall">Add to home screen</button><button class="btn sun" id="adminOpen" hidden>Admin panel</button></div>
    <div class="row" style="margin-top:6px"><span>Dark mode</span><button class="sw" id="swTheme" role="switch" aria-label="Dark mode"></button></div>
    <div class="row"><span>Sound effects</span><button class="sw on" id="swSound" role="switch" aria-label="Sound effects"></button></div></div>
    <h2>Achievements</h2><div class="rowh" id="badges2"></div><button class="btn out" id="logout" style="margin-top:16px">Log out</button></div></div></div>
@@ -100,10 +105,20 @@
 <div class="modal" id="mInfo" role="dialog" aria-modal="true"><div class="sheet"><div id="iArt" style="width:96px;height:96px"></div><h3 id="iT" style="font-size:22px"></h3><p class="msg" id="iBin" style="font-weight:600"></p><p id="iD" style="margin:10px 0"></p><p class="msg" id="iEx"></p><button class="btn" data-close style="margin-top:14px">Got it</button></div></div>
 <div class="modal" id="mGen" role="dialog" aria-modal="true"><div class="sheet" style="text-align:center"><div id="gMas" style="display:grid;place-items:center"></div><h3 id="gT" style="font-size:24px"></h3><p class="msg" id="gD"></p><button class="btn sun" data-close style="margin-top:14px">Awesome</button></div></div>
 <div class="modal" id="mHist" role="dialog" aria-modal="true"><div class="sheet"><h3>Recycling history</h3><div id="histBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
+<div class="modal" id="mBld" role="dialog" aria-modal="true"><div class="sheet"><div id="bBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
+<div class="modal" id="mBldNew" role="dialog" aria-modal="true"><div class="sheet"><h3>Set up this building</h3><p class="msg">Give it a name people will recognize. You’ll add floors next.</p>
+ <label class="msg" for="bnName">Building name</label><input type="text" id="bnName" maxlength="60" placeholder="e.g. Science Hall">
+ <button class="btn sun" id="bnSave" style="margin-top:10px">Create building</button><button class="btn out" data-close style="margin-top:10px">Cancel</button><p class="msg" id="bnMsg" role="status"></p></div></div>
+<div class="modal" id="mAdmin" role="dialog" aria-modal="true"><div class="sheet"><h3>Admin panel</h3>
+ <div class="row"><span>Admin mode<br><small class="msg">On: you can add bins, buildings and floors. Off: you see the app like everyone else.</small></span><button class="sw on" id="swAdmin" role="switch" aria-label="Admin mode"></button></div>
+ <h2 style="font-size:16px;margin:16px 0 4px">Who can add bins</h2><p class="msg" style="margin-top:0">Switch a person on to let them add bins (outside and inside). Everyone else can still view the map and use every bin.</p>
+ <div class="srch" style="margin-top:10px"><input type="text" id="auQ" placeholder="Search username or email" aria-label="Search users" maxlength="60" autocomplete="off"><button class="btn out sm" id="auRef">Refresh</button></div>
+ <div class="seg" id="auSeg" style="margin:0 0 6px"><button class="on" data-u="all">Everyone</button><button data-u="yes">Has access</button></div>
+ <div id="auList"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
 <div class="modal" id="mBin" role="dialog" aria-modal="true"><div class="sheet"><h3>Add this bin</h3><p class="msg" id="binWhere"></p>
  <div class="seg" id="binType"><button class="on" data-t="Recycling">Recycling</button><button data-t="Compost">Compost</button><button data-t="Trash">Trash</button></div>
  <label class="msg" for="binName">Name or landmark (optional)</label><input type="text" id="binName" maxlength="40" placeholder="e.g. Library entrance">
- <button class="btn sun" id="binSave" style="margin-top:10px">Save bin</button><button class="btn out" data-close style="margin-top:10px">Cancel</button><p class="msg" id="binMsg" role="status"></p></div></div>
+ <button class="btn sun" id="binSave" style="margin-top:10px">Save bin</button><button class="btn out" id="binCancel" style="margin-top:10px">Cancel</button><p class="msg" id="binMsg" role="status"></p></div></div>
 <div class="modal" id="mInstall" role="dialog" aria-modal="true"><div class="sheet"><div id="iMas" style="display:grid;place-items:center"></div><h3 style="text-align:center;font-size:21px">Add BinBuddy to your home screen</h3><p class="msg" style="text-align:center">It opens like a real app, full screen, with its own icon.</p>
  <div class="seg" id="instSeg"><button data-p="ios">iPhone</button><button data-p="android">Android</button><button data-p="desktop">Computer</button></div>
  <ol class="steps" id="instBody"></ol><button class="btn sun" id="instNow" hidden>Install now</button><button class="btn out" data-close style="margin-top:10px">Maybe later</button></div></div>

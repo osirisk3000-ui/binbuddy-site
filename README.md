@@ -39,3 +39,12 @@ Map style picker (Auto, Liberty, Bright, Positron, Dark, Fiord; choice saved on 
 
 ## v11 changes
 Search suggestions now appear as you type (3+ letters, 350 ms pause) using Photon (photon.komoot.io, free, no key). Pressing Search/Enter uses Photon and falls back to Nominatim if Photon is down. Your own bins are matched by name first. Service worker cache is now `binbuddy-v11`.
+
+## v12 changes
+- **Map follows your phone.** The map turns to match the way you face (compass on Android/iPhone; falls back to your walking direction from GPS). Two-finger twist rotates it by hand (this turns auto off). The arrow button on the side goes back to auto; the small needle top-left points north and tapping it snaps north-up. On a computer, Shift+drag rotates.
+- **Trash can counter** on the Home screen and above the map (total, outside, inside).
+- **Buildings and floors.** Tap a building: admins set it up once (name), then add/delete floors and put trash cans on a floor. Everyone can open a registered building to see its floors and inside bins. Floors can be marked closed.
+- **Inside vs outside.** Bins on a floor are "inside" (orange building marker with a count, tagged Inside, with a "may be closed" warning). Bins on the map are "outside" (tagged always available). An All / Outside / Inside filter sits under the type filter, and "Walk to the nearest bin" only uses outside bins.
+- **Admin panel** for osiris.k3000@gmail.com (Profile > Admin panel): Admin mode switch, list of users, and a per-person "can add bins" switch. Nobody else sees the add-bin buttons unless switched on. All of this is enforced in the database (schema_patch_4.sql), not just hidden in the page.
+- **Student ID login fix.** Scanned IDs are cleaned (spaces, * etc. removed) the same way on the phone, in the database and in the id-login function, so they match the ID you linked. The function now logs why a code wasn't sent (Dashboard > Edge Functions > id-login > Logs).
+- Service worker cache is now `binbuddy-v12`.

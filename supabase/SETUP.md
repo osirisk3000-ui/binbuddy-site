@@ -58,3 +58,11 @@ Only the **Project URL** and the **anon (public) key** (Project Settings > API).
 - Walking routes come from routing.openstreetmap.de (foot profile). The route snaps to the nearest footpath, so BinBuddy joins both ends with short dashed links: one from your blue dot, one to the bin pin. "Open in Maps" hands off to Apple Maps (iPhone) or Google Maps (everything else) in walking mode.
 - Credit "OpenFreeMap © OpenMapTiles, Data © OpenStreetMap contributors" is shown on the map (required).
 
+
+## Milestone 4 additions (v12 site)
+1. **Run `schema_patch_4.sql`** once in the SQL Editor. It adds: the admin check (osiris.k3000@gmail.com), `profiles.can_add_bins`, buildings, floors, inside/outside bins, the admin functions, and the student-ID cleanup. Until you run it the map still loads (old columns), but admin tools, floors and the "only approved people can add bins" rule will not work.
+2. **Re-deploy the `id-login` Edge Function** (paste the new `supabase/functions/id-login/index.ts`, keep Verify JWT OFF).
+3. **Admin account.** Sign up / log in as osiris.k3000@gmail.com. The patch lets that address bypass the campus-email rule at signup. If that account already exists, nothing else is needed. To change the admin email, edit it in `is_admin()` (and `enforce_email_domain()`) and re-run the file.
+4. **Who can add bins now:** only the admin (in Admin mode) and users you switch on in Profile > Admin panel. People who added bins before this patch lose that ability until you switch them on (their old bins stay).
+5. **Buildings:** in Admin mode, tap a building on the map > "Set up this building" > name it > add floors (1, 2, Basement...) > "Add a trash can on this floor". Deleting a floor or building also deletes the inside bins on it.
+6. **Student ID login not sending a code?** Check, in order: the ID is linked (Profile shows "Linked"); Authentication > Email Templates > Magic Link contains `{{ .Token }}`; Edge Function logs for `id-login`; Supabase only sends one code per account per minute.

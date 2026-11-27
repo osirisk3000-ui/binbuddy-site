@@ -16,7 +16,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const { action, student_id, code } = await req.json();
-    const id = String(student_id ?? "").trim().toUpperCase();
+    // same cleanup the database applies when an ID is linked: scanners sometimes add spaces, * or other characters
+    const id = String(student_id ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
     const url = Deno.env.get("SUPABASE_URL")!;
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
     const anon = createClient(url, Deno.env.get("SUPABASE_ANON_KEY") ?? req.headers.get("apikey") ?? "", { auth: { persistSession: false } });
@@ -31,7 +32,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "request") {
-      if (email) await anon.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      if (email) {
+        const { error } = await anon.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+        // The person never sees this (so nobody can probe which IDs exist), but you can: Dashboard > Edge Functions > id-login > Logs.
+        if (error) console.error("id-login: could not send the code:", error.message);
+      } else {
+        console.log("id-login: no account has that ID linked (normalized ID length " + id.length + ")");
+      }
       return json({ ok: true });
     }
     if (action === "verify") {
