@@ -157,3 +157,6 @@ a.btn{display:block;text-align:center;text-decoration:none}#nearBtn[hidden]{disp
 .li .x2{width:32px;height:32px;border-radius:50%;background:var(--line);font-size:13px;flex:none;color:var(--ink)}
 
 .stat.binstat{display:flex;align-items:center;gap:12px}.stat.binstat .ic{margin:0}
+.nfring{width:92px;height:92px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:var(--hero);color:#fff;position:relative}
+.nfring.busy:before,.nfring.busy:after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--pri);animation:nfp 1.8s ease-out infinite}.nfring.busy:after{animation-delay:.9s}@keyframes nfp{from{transform:scale(1);opacity:.7}to{transform:scale(1.7);opacity:0}}
+button.sw[disabled]{opacity:.5}

@@ -80,6 +80,8 @@ function scanErr(e){const m=(e&&e.message)||'';
  if(m==='rate_limited')return"Slow down a little. Try again in a few seconds.";
  if(m==='daily_cap_reached')return"You've hit today's scan limit. Come back tomorrow!";
  if(m==='not_authenticated')return"You were signed out. Please log in again.";
+ if(m==='nfc_required')return"Tap the NFC sticker on the bin to confirm, then press Add to bin again.";
+ if(/^wrong_bin/.test(m))return"That sticker is on a "+(m.split(':')[1]||'different')+" bin. Find the right bin for this item.";
  return"Couldn't save that. Check your connection and try again.";}
 const guard=(btn,msg,fn)=>async()=>{if(btn.disabled)return;btn.disabled=true;msg.textContent='';try{await fn()}catch(e){msg.textContent=authErr(e);SFX.bad()}finally{btn.disabled=false}};
 let pendingId=null,pend={email:'',pass:'',mode:'signup'},resendAt=0;
@@ -145,7 +147,7 @@ async function loadMe(){
   hist:(d.recent||[]).map(r=>({i:r.item,m:r.material,p:r.points,t:Date.parse(r.t)})),dly:{d:todayStr(),scans:d.today_scans,cans:d.today_cans},wkl:{w:wk(),plastic:d.week_plastic}}}
 async function enter(){
  try{await loadMe()}catch(e){screen('welcome');$('welMsg').textContent="Couldn't load your account. "+authErr(e);return}
- roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true);maybeInstallTip();if(window.BBMap)BBMap.load()}
+ roll();S.hist=S.hist||[];lbCache={};screen('app');applyTheme();render();curV='home';show('home',true);maybeInstallTip();if(window.BBMap)BBMap.load();if(window.BBNFC)BBNFC.afterLogin()}
 /* ---------- render ---------- */
 const setAv=(e,s)=>{e.style.backgroundImage=s.avatar?`url("${s.avatar}")`:'';e.textContent=s.avatar?'':s.name[0].toUpperCase()};
 const bdg=s=>BADGES.map(b=>{const[a,g]=b.p(s),got=a>=g;return`<div class="badge ${got?'got':''}"><div class="bi">${ic(b.i)}</div><b>${b.n}</b><div class="msg">${got?'Unlocked':Math.min(a,g)+' / '+g}</div></div>`}).join('');
@@ -191,7 +193,7 @@ function renderUsers(){const q=$('auQ').value.trim().toLowerCase();
   renderUsers()}})}
 async function loadUsers(){$('auList').innerHTML='<p class="msg">Loading…</p>';
  try{const {data,error}=await sb.rpc('admin_list_users');if(error)throw error;auUsers=data||[];renderUsers()}catch(e){$('auList').innerHTML=`<p class="msg">${esc(adminErr(e))}</p>`}}
-function openAdmin(){if(!(S&&S.perms&&S.perms.admin))return;const on=store.get('bb3:admin')!==false;$('swAdmin').classList.toggle('on',on);$('swAdmin').setAttribute('aria-checked',on);$('mAdmin').classList.add('on');loadUsers()}
+function openAdmin(){if(!(S&&S.perms&&S.perms.admin))return;const on=store.get('bb3:admin')!==false;$('swAdmin').classList.toggle('on',on);$('swAdmin').setAttribute('aria-checked',on);$('mAdmin').classList.add('on');loadUsers();if(window.BBNFC)BBNFC.adminInit()}
 $('adminOpen').onclick=openAdmin;$('adminBarBtn').onclick=openAdmin;$('auRef').onclick=loadUsers;$('auQ').addEventListener('input',renderUsers);
 $('auSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{auFilter=b.dataset.u;$('auSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderUsers()});
 $('swAdmin').onclick=()=>{const on=store.get('bb3:admin')===false;store.set('bb3:admin',on);$('swAdmin').classList.toggle('on',on);$('swAdmin').setAttribute('aria-checked',on);if(window.BBMap)BBMap.refreshPerms();toast(on?"Admin mode on":"Admin mode off")};
@@ -237,7 +239,9 @@ async function handle(f){cur=null;$('res').style.display='none';$('scanMsg').tex
  }catch(err){bootHide();camSet('');$('prev').classList.remove('on');$('scanMsg').textContent=err&&err.aiLoad?"The AI couldn’t finish loading. Check your connection, close other tabs, and try again.":"Couldn't identify that. Move closer, center one item, use good light, and try again.";SFX.bad()}}
 let adding=false;
 $('addBin').onclick=async()=>{if(!cur||adding)return;adding=true;const c=cur;
- try{const {data,error}=await sb.rpc('record_scan',{p_item_key:slug(c.item)});if(error)throw error;
+ try{let rs=await sb.rpc('record_scan',{p_item_key:slug(c.item)});
+  if(rs.error&&/nfc_required/.test(rs.error.message||'')&&window.BBNFC){if(!await BBNFC.verify())return;rs=await sb.rpc('record_scan',{p_item_key:slug(c.item)})}
+  const {data,error}=rs;if(error)throw error;
   roll();const t=todayStr();S.pts=data.total_points;S.items=data.items;S.streak=data.streak;S.last=t;
   S.mats[c.m]=(S.mats[c.m]||0)+1;S.dly.scans++;if(c.item==="Aluminum can")S.dly.cans++;if(c.m==="Plastic")S.wkl.plastic++;
   S.hist.unshift({i:c.item,m:c.m,p:data.points_awarded,t:Date.now()});S.hist=S.hist.slice(0,30);lbCache={};

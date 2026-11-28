@@ -48,3 +48,6 @@ Search suggestions now appear as you type (3+ letters, 350 ms pause) using Photo
 - **Admin panel** for osiris.k3000@gmail.com (Profile > Admin panel): Admin mode switch, list of users, and a per-person "can add bins" switch. Nobody else sees the add-bin buttons unless switched on. All of this is enforced in the database (schema_patch_4.sql), not just hidden in the page.
 - **Student ID login fix.** Scanned IDs are cleaned (spaces, * etc. removed) the same way on the phone, in the database and in the id-login function, so they match the ID you linked. The function now logs why a code wasn't sent (Dashboard > Edge Functions > id-login > Logs).
 - Service worker cache is now `binbuddy-v12`.
+
+## v14 changes
+NFC sticker verification (js/nfc.js, supabase/schema_patch_5.sql): admin links stickers to bins, players tap one before points are awarded (switch in Admin panel, off by default). Service worker cache is now `binbuddy-v14`. Tested in headless Chromium with a fake NFC reader and mock Supabase only. Not tested with real stickers, phones or your real project.

@@ -111,10 +111,15 @@
  <button class="btn sun" id="bnSave" style="margin-top:10px">Create building</button><button class="btn out" data-close style="margin-top:10px">Cancel</button><p class="msg" id="bnMsg" role="status"></p></div></div>
 <div class="modal" id="mAdmin" role="dialog" aria-modal="true"><div class="sheet"><h3>Admin panel</h3>
  <div class="row"><span>Admin mode<br><small class="msg">On: you can add bins, buildings and floors. Off: you see the app like everyone else.</small></span><button class="sw on" id="swAdmin" role="switch" aria-label="Admin mode"></button></div>
+ <div class="row" style="margin-top:12px"><span>Require NFC sticker tap<br><small class="msg">On: people must tap a bin’s NFC sticker before points are awarded. Turn on only after the stickers are in place.</small></span><button class="sw" id="swNfc" role="switch" aria-checked="false" aria-label="Require NFC sticker tap" disabled></button></div><p class="msg" id="nfcAdmMsg"></p>
  <h2 style="font-size:16px;margin:16px 0 4px">Who can add bins</h2><p class="msg" style="margin-top:0">Switch a person on to let them add bins (outside and inside). Everyone else can still view the map and use every bin.</p>
  <div class="srch" style="margin-top:10px"><input type="text" id="auQ" placeholder="Search username or email" aria-label="Search users" maxlength="60" autocomplete="off"><button class="btn out sm" id="auRef">Refresh</button></div>
  <div class="seg" id="auSeg" style="margin:0 0 6px"><button class="on" data-u="all">Everyone</button><button data-u="yes">Has access</button></div>
  <div id="auList"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
+<div class="modal" id="mNfc" role="dialog" aria-modal="true"><div class="sheet" style="text-align:center"><div class="nfring" id="nfRing"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 8.5a5 5 0 010 7M9.5 6a9 9 0 010 12M13 3.5a13 13 0 010 17"/></svg></div>
+ <h3 id="nfT">Tap the sticker on the bin</h3><p class="msg" id="nfD"></p><p class="msg" id="nfMsg" role="status" style="color:var(--pri);font-weight:600"></p>
+ <button class="btn" id="nfRetry" hidden>Start NFC</button><button class="btn sun" id="nfDone" hidden>I tapped the sticker</button><button class="btn out" id="nfCancel" style="margin-top:10px">Cancel</button></div></div>
+<div class="modal" id="mNfcAdm" role="dialog" aria-modal="true"><div class="sheet"><h3>NFC stickers</h3><div id="ntBody"></div><button class="btn out" data-close style="margin-top:12px">Close</button></div></div>
 <div class="modal" id="mBin" role="dialog" aria-modal="true"><div class="sheet"><h3>Add this bin</h3><p class="msg" id="binWhere"></p>
  <div class="seg" id="binType"><button class="on" data-t="Recycling">Recycling</button><button data-t="Compost">Compost</button><button data-t="Trash">Trash</button></div>
  <label class="msg" for="binName">Name or landmark (optional)</label><input type="text" id="binName" maxlength="40" placeholder="e.g. Library entrance">
@@ -127,5 +132,5 @@
  <p class="msg">This only happens the first time. The AI model downloads once (about 90 MB), then scanning is instant and works offline. Please keep this page open.</p>
  <div class="bar"><i id="bootBar"></i></div><p class="msg" id="bootTxt">Starting…</p></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script defer src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script><script defer src="js/config.js"></script><script defer src="js/app.js"></script><script defer src="js/map.js"></script><script defer src="js/ai-barcode.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script><script defer src="js/config.js"></script><script defer src="js/app.js"></script><script defer src="js/map.js"></script><script defer src="js/nfc.js"></script><script defer src="js/ai-barcode.js"></script>
 </body></html>
