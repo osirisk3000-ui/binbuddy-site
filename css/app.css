@@ -160,3 +160,9 @@ a.btn{display:block;text-align:center;text-decoration:none}#nearBtn[hidden]{disp
 .nfring{width:92px;height:92px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:var(--hero);color:#fff;position:relative}
 .nfring.busy:before,.nfring.busy:after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--pri);animation:nfp 1.8s ease-out infinite}.nfring.busy:after{animation-delay:.9s}@keyframes nfp{from{transform:scale(1);opacity:.7}to{transform:scale(1.7);opacity:0}}
 button.sw[disabled]{opacity:.5}
+.qrcam{position:relative;border-radius:20px;overflow:hidden;background:#000;aspect-ratio:1;max-width:340px;margin:8px auto}.qrcam video{width:100%;height:100%;object-fit:cover;display:block}
+.qrframe{position:absolute;inset:16%;border:3px solid #fff;border-radius:18px;box-shadow:0 0 0 999px #0006}
+.qsbox{width:min(260px,72vw);margin:8px auto;background:#fff;padding:8px;border-radius:14px}.qsbox svg{display:block;width:100%;height:auto}
+#qrPrint{display:none}
+@media print{body>*:not(#qrPrint){display:none!important}#qrPrint{display:block!important;text-align:center;font-family:system-ui,sans-serif;color:#000;padding:30px}#qrPrint svg{width:360px;height:360px}#qrPrint h1{font-size:30px;margin:0 0 12px}#qrPrint p{font-size:18px;margin:10px 0}}
+#mQr,#mQrShow{z-index:140!important}

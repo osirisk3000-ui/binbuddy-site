@@ -51,3 +51,8 @@ Search suggestions now appear as you type (3+ letters, 350 ms pause) using Photo
 
 ## v14 changes
 NFC sticker verification (js/nfc.js, supabase/schema_patch_5.sql): admin links stickers to bins, players tap one before points are awarded (switch in Admin panel, off by default). Service worker cache is now `binbuddy-v14`. Tested in headless Chromium with a fake NFC reader and mock Supabase only. Not tested with real stickers, phones or your real project.
+
+v14.1: an NFC tap now stays valid for 1 minute (`schema_patch_6.sql`).
+
+## v15 changes
+In-app QR scanning for bin verification (`js/nfc.js`), QR generator + print in the admin sticker manager, `schema_patch_7.sql`. Service worker cache is `binbuddy-v15`.

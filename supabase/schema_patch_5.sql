@@ -8,7 +8,7 @@
 -- ---------- 0. settings (all default to OFF/safe, so nothing changes until you switch it on in the Admin panel) ----------
 insert into public.app_settings(key,value) values
   ('require_nfc','off'),            -- 'on' = points need an NFC tap (switch in Admin panel)
-  ('nfc_window_seconds','180'),     -- a tap stays valid this long
+  ('nfc_window_seconds','60'),      -- a tap stays valid this long (seconds)
   ('nfc_match_bin_type','on')       -- 'on' = sticker's bin type must match the item's bin type
 on conflict (key) do nothing;
 
@@ -85,7 +85,7 @@ begin
   if coalesce(public.setting('require_nfc'),'off') = 'on' then
     select * into ck from public.nfc_checkins
       where user_id=uid and not used
-        and created_at > now() - make_interval(secs => coalesce(public.setting('nfc_window_seconds'),'180')::int)
+        and created_at > now() - make_interval(secs => coalesce(public.setting('nfc_window_seconds'),'60')::int)
       order by id desc limit 1 for update;
     if not found then raise exception 'nfc_required' using errcode='54000'; end if;
     select * into tg from public.nfc_tags where id=ck.tag_id and active;

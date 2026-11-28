@@ -68,9 +68,15 @@ Only the **Project URL** and the **anon (public) key** (Project Settings > API).
 6. **Student ID login not sending a code?** Check, in order: the ID is linked (Profile shows "Linked"); Authentication > Email Templates > Magic Link contains `{{ .Token }}`; Edge Function logs for `id-login`; Supabase only sends one code per account per minute.
 
 ## v14: NFC sticker verification
-1. Run `supabase/schema_patch_5.sql` once in the SQL Editor (after patches 1-4).
+1. Run `supabase/schema_patch_5.sql` once in the SQL Editor (after patches 1-4), then `schema_patch_6.sql` (sets the tap window to 1 minute).
 2. In the app (as admin, Admin mode on): open a bin on the map, tap **NFC stickers**, then **Add a sticker** and hold a blank sticker to the back of an Android phone (Chrome). The app writes a secret link onto it and registers it for that bin. Inside bins have a 📡 button in the building panel. On iPhone (cannot write NFC from a website) the app shows the link: write it with the free NFC Tools app (Write > Add a record > URL), then tap Save.
 3. Stick them on the bins. When ready, turn on **Admin panel > Require NFC sticker tap**. Until then nothing changes for players.
-4. With it on, "Add to bin" asks for a tap first. The server only awards points if that person tapped a sticker in the last 3 minutes (each tap is used up by one scan) and, by default, the sticker's bin type matches the item's bin type. Tunables are in `app_settings`: `nfc_window_seconds`, `nfc_match_bin_type`.
+4. With it on, "Add to bin" asks for a tap first. The server only awards points if that person tapped a sticker in the last minute (each tap is used up by one scan) and, by default, the sticker's bin type matches the item's bin type. Tunables are in `app_settings`: `nfc_window_seconds`, `nfc_match_bin_type`.
 5. Android Chrome reads the sticker inside the app. iPhones cannot: tapping a sticker opens the site in Safari, which records the tap (log in there once), then the player returns and presses "I tapped the sticker".
-6. Security: the sticker code is a static secret, so anyone with an NFC reader app could copy it. The server limits damage (single-use taps, 3 minute window, bin-type match, daily scan cap), but for stronger protection use NTAG 424 DNA stickers (rotating signed codes) with a verifying Edge Function. Optionally lock written stickers (NFC Tools > Other > Lock tag) so no one can overwrite them. Locking is permanent.
+6. Security: the sticker code is a static secret, so anyone with an NFC reader app could copy it. The server limits damage (single-use taps, 1 minute window, bin-type match, daily scan cap), but for stronger protection use NTAG 424 DNA stickers (rotating signed codes) with a verifying Edge Function. Optionally lock written stickers (NFC Tools > Other > Lock tag) so no one can overwrite them. Locking is permanent.
+
+## v15: QR codes (for iPhones, or anyone)
+1. Run `supabase/schema_patch_7.sql` once (lets the admin re-show a sticker's QR code).
+2. As admin: open a bin > **NFC stickers**. Each sticker has a **QR** button (same code as the sticker), and **Make a QR code (no sticker)** creates a new one. Tap **Print** (or screenshot it) and stick it on the bin.
+3. Players: **Add to bin** > **Scan the bin's QR code**. It opens the camera inside the app and records the check-in with no link or new page. iPhones show the QR button as the main option. Android phones with Chrome can still tap the NFC sticker instead.
+4. Security note: a printed QR code can be photographed and scanned from anywhere, which is weaker than an NFC tap. The server limits (1 minute window, single use, bin-type match, daily cap) still apply.
